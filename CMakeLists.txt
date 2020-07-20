@@ -29,6 +29,8 @@ if (NOT SDSLLIB OR NOT SDSLINC)
 else()
     include_directories(SDSLINC)
     link_directories(SDSLLIB)
+    install(DIRECTORY DESTINATION ${OUTPUT})
+    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT})
 endif()
 
 file(GLOB_RECURSE ProjectFiles *.cc)
