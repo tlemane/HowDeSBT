@@ -40,7 +40,11 @@ set(DEPS CROAR SDSL)
 include_directories(${PROJECT_SOURCE_DIR})
 
 add_executable(howdesbt ${ProjectFiles})
-add_dependencies(howdesbt CROAR SDSL)
+if (NOT SDSLLIB OR NOT SDSLINC)
+    add_dependencies(howdesbt CROAR SDSL)
+else()
+    add_dependencies(howdesbt CROAR)
+endif()
 target_link_libraries(howdesbt ${LIBS})
 
 
