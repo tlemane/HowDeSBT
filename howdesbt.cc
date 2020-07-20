@@ -12,7 +12,6 @@
 #include "support.h"
 #include "commands.h"
 // subcommands
-#include "cmd_make_bf.h"
 #include "cmd_cluster.h"
 #include "cmd_build_sbt.h"
 #include "cmd_query.h"
@@ -98,9 +97,6 @@ int main
 
 	// primary commands
 
-	cmd->add_subcommand (new MakeBFCommand       ("makebf"));
-	cmd->add_command_alias                       ("bfmake");
-	cmd->add_command_alias                       ("makefilter");
 	cmd->add_subcommand (new ClusterCommand      ("cluster"));
 	cmd->add_subcommand (new BuildSBTCommand     ("build"));
 	cmd->add_subcommand (new QueryCommand        ("query"));
