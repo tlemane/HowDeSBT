@@ -969,7 +969,6 @@ u64 BloomFilter::mer_to_position
   	const size_t sm = 10;			// TODO: argument
 	const size_t sk = mer.size();
 
-	minimrepart.test;
 
 	const uint64_t minim = minimrepart.get_minim_from_str(mer, sk, sm);
 	if (minim == numeric_limits<uint64_t>::max()){
