@@ -23,6 +23,7 @@ public:
 
 	std::vector<std::string> bfFilenames;
 	std::vector<std::string> queryFilenames;
+	std::string repart_filename;
 	std::vector<double> queryThresholds;
 	double generalQueryThreshold;
 	bool distinctKmers;

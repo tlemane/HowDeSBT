@@ -180,8 +180,10 @@ BloomFilter::BloomFilter
 	if (trackMemory)
 		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 1" << endl;
 
-	RepartFile f(_repart_file_name);
-	minimrepart = MinimRepart<uint64_t> (f);
+	if (_repart_file_name != ""){
+		RepartFile f(_repart_file_name);
+		minimrepart = MinimRepart<uint64_t> (f);
+		}
 	}
 
 BloomFilter::BloomFilter
@@ -217,8 +219,11 @@ BloomFilter::BloomFilter
 	if (trackMemory)
 		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 2" << endl;
 	
-	RepartFile f(_repart_file_name);
-	minimrepart = MinimRepart<uint64_t> (f);
+	
+	if (_repart_file_name != ""){
+		RepartFile f(_repart_file_name);
+		minimrepart = MinimRepart<uint64_t> (f);
+		}
 	}
 
 BloomFilter::BloomFilter

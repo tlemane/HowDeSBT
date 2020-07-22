@@ -100,7 +100,6 @@ public:
 	std::string listFilename;
 	std::string treeFilename;
 	std::string nodeTemplate;
-	std::string repart_filename;
 	std::uint64_t startPosition;	// origin-zero, half-open
 	std::uint64_t endPosition;
 	bool cullNodes;
