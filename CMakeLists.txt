@@ -17,7 +17,7 @@ ExternalProject_add(CROAR
     INSTALL_COMMAND "")
 
 link_directories(${PROJECT_BINARY_DIR}/CROAR/src/CROAR-build/)
-include_directories(${PROJECT_BINARY_DIR}/CROAR/src/CROAR/include/)
+include_directories(${PROJECT_BINARY_DIR}/CROAR/src/CROAR/include/ ../../libs/kmtricks/)
 
 if (NOT SDSLLIB OR NOT SDSLINC)
     ExternalProject_add(SDSL

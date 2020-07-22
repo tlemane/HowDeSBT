@@ -39,7 +39,7 @@ enum topofmt
 class BloomTree
 	{
 public:
-	BloomTree(const std::string& name="", const std::string& bfFilename="");
+	BloomTree(const std::string& name="", const std::string& bfFilename="", const std::string& repart_filename="");
 	BloomTree(BloomTree* tree);
 	virtual ~BloomTree();
 
@@ -96,6 +96,7 @@ public:
 	FileManager* manager;
 	std::string name;
 	std::string bfFilename;
+	std::string repart_filename;
 	std::string futureBfFilename;
 	BloomFilter* bf;
 	bool isLeaf;
