@@ -966,6 +966,22 @@ u64 BloomFilter::mer_to_position
 	{
 	// nota bene: we don't enforce numHashes == 1
 
+  	const size_t sm = 10;			// TODO: argument
+	const size_t sk = mer.size();
+
+	minimrepart.test;
+
+	const uint64_t minim = minimrepart.get_minim_from_str(mer, sk, sm);
+	if (minim == numeric_limits<uint64_t>::max()){
+		cerr << "No minimizer found" << endl;
+		return 1;
+	}
+	
+
+	const uint part = minimrepart.get_partition(minim);
+
+
+
 	u64 pos = hasher1->hash(mer) % hashModulus;
 	if (pos < numBits) return pos;
 	              else return npos;  // position is *not* in the filter

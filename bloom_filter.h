@@ -7,7 +7,9 @@
 #include <vector>
 #include "hash.h"
 #include "bit_vector.h"
+#ifndef MINIM_REPART_HPP
 #include "minim_repart.hpp"
+#endif
 
 class FileManager;
 

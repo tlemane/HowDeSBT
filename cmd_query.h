@@ -30,6 +30,7 @@ public:
 
 	std::string treeFilename;
 	std::vector<std::string> queryFilenames;
+	std::string repart_filename;
 	std::vector<double> queryThresholds;
 	std::string matchesFilename;
 	double generalQueryThreshold;
