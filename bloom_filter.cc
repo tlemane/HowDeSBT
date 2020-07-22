@@ -169,7 +169,6 @@ BloomFilter::BloomFilter
 		numBits(0),
 		setSizeKnown(false),
 		setSize(0),
-		// minimrepart(MinimRepart<uint64_t> (RepartFile(_repart_file_name))),
 		numBitVectors(1)
 	{
 	// nota bene: we clear all maxBitVectors entries (instead of just
@@ -966,18 +965,18 @@ u64 BloomFilter::mer_to_position
 	{
 	// nota bene: we don't enforce numHashes == 1
 
-  	const size_t sm = 10;			// TODO: argument
+  	const size_t sm = 10;			// TODO: argument (or stored in the minimrepart file)
 	const size_t sk = mer.size();
 
 
-	const uint64_t minim = minimrepart.get_minim_from_str(mer, sk, sm);
+	uint64_t minim = minimrepart.get_minim_from_str(mer, sk, sm);
 	if (minim == numeric_limits<uint64_t>::max()){
-		cerr << "No minimizer found" << endl;
-		return 1;
+		// cerr << "No minimizer found" << endl;
+		return npos;
 	}
 	
 
-	const uint part = minimrepart.get_partition(minim);
+	uint part = minimrepart.get_partition(minim);
 
 
 

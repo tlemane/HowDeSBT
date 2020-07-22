@@ -165,7 +165,7 @@ public:
 	static const int absent     =  0;
 	static const int present    =  1;
 
-public: 
+private: 
 		// std::string repart_filename;	// kmer repartition file name, as produced by kmtricks. 
 	MinimRepart<uint64_t> minimrepart;// kmer repartiter (cf kmtricks lib)
 
