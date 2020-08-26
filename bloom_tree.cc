@@ -44,13 +44,11 @@ int  BloomTree::dbgTraversalCounter = -1;
 
 BloomTree::BloomTree
    (const string& _name,
-	const string& _bfFilename, 
-	const string& _repart_filename)
+	const string& _bfFilename)
 	  :	isDummy(_bfFilename.empty()),
 		manager(nullptr),
 		name(_name),
 		bfFilename(_bfFilename),
-		repart_filename(_repart_filename),
 		bf(nullptr),
 		isLeaf(true),
 		parent(nullptr),
@@ -69,12 +67,39 @@ BloomTree::BloomTree
 	}
 
 BloomTree::BloomTree
+  (const string& _name,
+   const string& _bfFilename,
+   const string& repartFileName,
+   const string& winFileName)
+  :	isDummy(_bfFilename.empty()),
+     manager(nullptr),
+     name(_name),
+     bfFilename(_bfFilename),
+     bf(nullptr),
+     isLeaf(true),
+     parent(nullptr),
+     fpRateKnown(false),
+     fpRate(0.0),
+     nodesShareFiles(false),
+     queryStats(nullptr),
+     repartFileName(repartFileName),
+     winFileName(winFileName)
+{
+  if (trackMemory)
+  {
+    if (bfFilename.empty())
+      cerr << "@+" << this << " constructor BloomTree(<no file>), variant 1" << endl;
+    else
+      cerr << "@+" << this << " constructor BloomTree(" << bfFilename << "), variant 1" << endl;
+  }
+}
+
+BloomTree::BloomTree
    (BloomTree* root)
 	  :	isDummy(root->isDummy),
 		manager(nullptr),
 		name(root->name),
 		bfFilename(root->bfFilename),
-		repart_filename(root->repart_filename),
 		bf(root->bf),
 		isLeaf(root->isLeaf),
 		parent(nullptr),
@@ -119,7 +144,7 @@ BloomTree::~BloomTree()
 
 void BloomTree::preload()
 	{
-	if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename, repart_filename);
+	if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename);
 	relay_debug_settings();
 	bf->preload();
 	}
@@ -130,7 +155,7 @@ void BloomTree::load()
 		{
 		if (FileManager::dbgContentLoad)
 			cerr << "BloomTree::load() creating new BF for \"" << name << "\"" << endl;
-		bf = BloomFilter::bloom_filter(bfFilename, repart_filename);
+		bf = BloomFilter::bloom_filter(bfFilename);
 		}
 	relay_debug_settings();
 	bf->reportLoad = reportLoad;
@@ -141,7 +166,7 @@ void BloomTree::load()
 
 void BloomTree::save(bool finished)
 	{
-	if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename, repart_filename);
+	if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename);
 
 	for (int bvIx=0 ; bvIx<bf->numBitVectors ; bvIx++)
 		{
@@ -219,7 +244,7 @@ BloomFilter* BloomTree::real_filter()
 
 	if (not is_dummy())
 		{
-		if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename, repart_filename);
+		if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename);
 		if (manager != nullptr) bf->manager = manager;
 		return bf;
 		}
@@ -336,7 +361,7 @@ void BloomTree::construct_union_nodes (u32 compressor)
 				cerr << "constructing compressed leaf for " << name << endl;
 			}
 
-		bf = BloomFilter::bloom_filter(bfFilename, repart_filename);
+		bf = BloomFilter::bloom_filter(bfFilename);
 		bf->load();
 
 		if (compressor != bvcomp_uncompressed)
@@ -494,7 +519,7 @@ void BloomTree::construct_allsome_nodes (u32 compressor)
 		if (dbgTraversal)
 			cerr << "\n=== constructing leaf (for allsome) " << name << " ===" << endl;
 
-		BloomFilter* bfInput = BloomFilter::bloom_filter(bfFilename, repart_filename);
+		BloomFilter* bfInput = BloomFilter::bloom_filter(bfFilename);
 		bfInput->load();
 
 		if (bfInput->numBitVectors!=1)
@@ -503,7 +528,7 @@ void BloomTree::construct_allsome_nodes (u32 compressor)
 		if (bvInput->is_compressed())
 			fatal ("error: " + bfFilename + " contains a compressed bit vector");
 
-		bf = new AllSomeFilter(newBfFilename, repart_filename);
+		bf = new AllSomeFilter(newBfFilename);
 		bf->copy_properties(bfInput);
 		bf->steal_bits(bfInput,/*src*/0,/*dst*/0,compressor);
 		delete bfInput;
@@ -680,7 +705,7 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 		if (dbgTraversal)
 			cerr << "\n=== constructing leaf (for determined) " << name << " ===" << endl;
 
-		BloomFilter* bfInput = BloomFilter::bloom_filter(bfFilename, repart_filename);
+		BloomFilter* bfInput = BloomFilter::bloom_filter(bfFilename);
 		bfInput->load();
 
 		if (bfInput->numBitVectors!=1)
@@ -689,7 +714,7 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 		if (bvInput->is_compressed())
 			fatal ("error: " + bfFilename + " contains a compressed bit vector");
 
-		bf = new DeterminedFilter(newBfFilename, repart_filename);
+		bf = new DeterminedFilter(newBfFilename);
 		bf->copy_properties(bfInput);
 		bf->steal_bits(bfInput,/*src*/0,/*dst*/1,compressor);
 		delete bfInput;
@@ -891,7 +916,7 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 		if (dbgTraversal)
 			cerr << "\n=== constructing leaf (for determined,brief) " << name << " ===" << endl;
 
-		BloomFilter* bfInput = BloomFilter::bloom_filter(bfFilename, repart_filename);
+		BloomFilter* bfInput = BloomFilter::bloom_filter(bfFilename);
 		bfInput->load();
 
 		if (bfInput->numBitVectors!=1)
@@ -900,7 +925,7 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 		if (bvInput->is_compressed())
 			fatal ("error: " + bfFilename + " contains a compressed bit vector");
 
-		bf = new DeterminedBriefFilter(newBfFilename, repart_filename);
+		bf = new DeterminedBriefFilter(newBfFilename);
 		bf->copy_properties(bfInput);
 		bf->steal_bits(bfInput,/*src*/0,/*dst*/1,compressor);
 		delete bfInput;
@@ -1132,7 +1157,7 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 		{
 		if (dbgTraversal)
 			cerr << "pre-loading " << name << endl;
-		bf = BloomFilter::bloom_filter(bfFilename, repart_filename);
+		bf = BloomFilter::bloom_filter(bfFilename);
 		bf->preload();
 		return;
 		}
@@ -1182,7 +1207,7 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 			{
 			if (dbgTraversal)
 				cerr << "pre-loading " << child->name << endl;
-			child->bf = BloomFilter::bloom_filter(child->bfFilename, child->repart_filename);
+			child->bf = BloomFilter::bloom_filter(child->bfFilename);
 			child->bf->preload();
 			}
 

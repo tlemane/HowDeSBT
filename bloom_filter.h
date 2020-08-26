@@ -7,9 +7,6 @@
 #include <vector>
 #include "hash.h"
 #include "bit_vector.h"
-#ifndef MINIM_REPART_HPP
-#include "minim_repart.hpp"
-#endif
 
 class FileManager;
 
@@ -25,8 +22,8 @@ public:
 	static const int maxBitVectors = 2;
 
 public:
-	BloomFilter(const std::string& filename, const std::string& repart_filename);
-	BloomFilter(const std::string& filename, const string& repart_filename, uint32_t kmerSize,
+	BloomFilter(const std::string& filename);
+	BloomFilter(const std::string& filename, uint32_t kmerSize,
 	            std::uint32_t numHashes, std::uint64_t hashSeed1, std::uint64_t hashSeed2,
 	            std::uint64_t numBits, std::uint64_t hashModulus=0);
 	BloomFilter(const BloomFilter* templateBf, const std::string& newFilename="");
@@ -92,7 +89,6 @@ public:
 	std::string filename;
 	std::uint32_t kmerSize;
 
-
 	HashCanonical* hasher1, *hasher2;
 	std::uint32_t numHashes;		// how many hash values are generated for
 									// .. each key
@@ -139,16 +135,16 @@ public:
 	static std::string filter_kind_to_string(std::uint32_t bfKind, bool shortString=true);
 	static int vectors_per_filter (const std::uint32_t bfKind);
 	static BloomFilter* bloom_filter
-	    (const std::string& filename, const std::string& repart_filename);
+	    (const std::string& filename);
 	static BloomFilter* bloom_filter
 	    (const std::uint32_t bfKind,
-	     const std::string& filename, const std::string& repart_filename, uint32_t kmerSize,
+	     const std::string& filename, uint32_t kmerSize,
 	     std::uint32_t numHashes, std::uint64_t hashSeed1, std::uint64_t hashSeed2,
 	     std::uint64_t numBits, std::uint64_t hashModulus=0);
 	static BloomFilter* bloom_filter
 	    (const BloomFilter* templateBf, const std::string& newFilename="");
 	static std::vector<std::pair<std::string,BloomFilter*>> identify_content
-	    (std::ifstream& in,  const string& repart_filename, const std::string& filename="");
+	    (std::ifstream& in, const std::string& filename="");
 	static double false_positive_rate
 		(std::uint32_t numHashes,std::uint64_t numBits,std::uint64_t numItems);
 
@@ -164,11 +160,6 @@ public:
 	static const int unresolved = -1;  // results for lookup()
 	static const int absent     =  0;
 	static const int present    =  1;
-
-private: 
-		// std::string repart_filename;	// kmer repartition file name, as produced by kmtricks. 
-	MinimRepart<uint64_t> minimrepart;// kmer repartiter (cf kmtricks lib)
-
 	};
 
 
@@ -180,8 +171,8 @@ class AllSomeFilter: public BloomFilter
 	//   bvSome is bvs[1]
 
 public:
-	AllSomeFilter(const std::string& filename, const std::string& repart_filename);
-	AllSomeFilter(const std::string& filename, const std::string& repart_filename, uint32_t kmerSize,
+	AllSomeFilter(const std::string& filename);
+	AllSomeFilter(const std::string& filename, uint32_t kmerSize,
 	              std::uint32_t numHashes, std::uint64_t hashSeed1, std::uint64_t hashSeed2,
 	              std::uint64_t numBits, std::uint64_t hashModulus=0);
 	AllSomeFilter(const BloomFilter* templateBf, const std::string& newFilename="");
@@ -206,8 +197,8 @@ class DeterminedFilter: public BloomFilter
 	//   bvHow        is bvs[1]
 
 public:
-	DeterminedFilter(const std::string& filename, const std::string& repart_filename);
-	DeterminedFilter(const std::string& filename, const std::string& repart_filename, uint32_t kmerSize,
+	DeterminedFilter(const std::string& filename);
+	DeterminedFilter(const std::string& filename, uint32_t kmerSize,
 	              std::uint32_t numHashes, std::uint64_t hashSeed1, std::uint64_t hashSeed2,
 	              std::uint64_t numBits, std::uint64_t hashModulus=0);
 	DeterminedFilter(const BloomFilter* templateBf, const std::string& newFilename="");
@@ -235,8 +226,8 @@ public:
 	enum { squeezed=0, notSqueezed=1 };
 
 public:
-	DeterminedBriefFilter(const std::string& filename, const std::string& repart_filename);
-	DeterminedBriefFilter(const std::string& filename, const std::string& repart_filename, uint32_t kmerSize,
+	DeterminedBriefFilter(const std::string& filename);
+	DeterminedBriefFilter(const std::string& filename, uint32_t kmerSize,
 	              std::uint32_t numHashes, std::uint64_t hashSeed1, std::uint64_t hashSeed2,
 	              std::uint64_t numBits, std::uint64_t hashModulus=0);
 	DeterminedBriefFilter(const BloomFilter* templateBf, const std::string& newFilename="");

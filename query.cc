@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 
 #include "utilities.h"
 #include "query.h"
@@ -42,6 +43,33 @@ Query::Query
 	seq     = qd.seq;
 	}
 
+Query::Query
+  (const querydata& qd,
+   double _threshold,
+   km::RepartFile *rep,
+   vector<tuple<uint64_t, uint64_t>> *hashwin,
+   uint64_t ms,
+   uint32_t minimsize
+   )
+  :	threshold(_threshold),
+     numPositions(0),
+     neededToPass(0),
+     neededToFail(0),
+     numUnresolved(0),
+     numPassed(0),
+     numFailed(0),
+     nodesExamined(0),
+     _repartitor(rep),
+     _win(hashwin),
+     _msize(ms),
+     _minimsize(minimsize)
+{
+  batchIx = qd.batchIx;
+  name    = qd.name;
+  seq     = qd.seq;
+
+}
+
 Query::~Query()
 	{
 	}
@@ -69,17 +97,37 @@ void Query::kmerize
 	// scan the sequence's kmers, convert to hash positions, and collect the
 	// distinct positions; optionally collect the corresponding kmers
 
-    set<u64> positionSet;
+	set<u64> positionSet;
 	pair<set<u64>::iterator,bool> status;
 
+	SabuHash h(kmerSize);
+
 	size_t goodNtRunLen = 0;
+  u64 part;
+  u64 pos;
+  u64 wsize;
+  km::Kmer<uint64_t> kmk(true);
+  km::Minimizer<uint64_t> kmm(_minimsize);
 	for (size_t ix=0; ix<seq.length() ; ix++)
 		{
 		if (not nt_is_acgt(seq[ix])) { goodNtRunLen = 0;  continue; }
 		if (++goodNtRunLen < kmerSize) continue;
 
 		string mer = seq.substr(ix+1-kmerSize,kmerSize);
-		u64 pos = bf->mer_to_position(mer);
+
+		if (_repartitor && _win)
+    {
+      kmk.set_kmer(mer);
+      kmm.set_kmer(&kmk, _minimsize, true);
+      part = _repartitor->get(kmm.value());
+      wsize = NMOD8((uint64_t)ceil((double) _msize / (double)_win->size()));
+      pos = (h.hash(mer) % wsize) + (wsize * part);
+    }
+    else
+    {
+      pos = bf->mer_to_position(mer);
+    }
+
 		if (pos != BloomFilter::npos)
 			{
 			if (distinct)
@@ -309,4 +357,136 @@ void Query::read_query_file
 		}
 
 	}
+
+void Query::read_query_file_km
+  (std::istream&	in,
+   const string&	_filename,
+   double			threshold,
+   vector<Query*>&	queries,
+   string& repartFileName,
+   string& winFileName
+  )
+{
+  bool			fileTypeKnown = false;
+  bool			haveFastaHeaders = false;
+  querydata		qd;
+
+  km::RepartFile *repartitor = new km::RepartFile(repartFileName);
+  vector<tuple<uint64_t, uint64_t>> _hash_windows;
+  ifstream hw(winFileName, ios::in);
+  uint64_t h0, h1;
+  uint32_t nb_parts;
+  hw.read((char*)&nb_parts, sizeof(uint32_t));
+  for ( int i = 0; i < nb_parts; i++ )
+  {
+    hw.read((char *) &h0, sizeof(uint64_t));
+    hw.read((char *) &h1, sizeof(uint64_t));
+    _hash_windows.push_back(make_tuple(h0, h1));
+  }
+  uint64_t max_size;
+  hw.read((char*) &max_size, sizeof(uint64_t));
+  uint32_t minimizer_size;
+  hw.read((char*) &minimizer_size, sizeof(uint32_t));
+  hw.close();
+
+  // derive a name to use for nameless sequences
+
+  string filename(_filename);
+  if (filename.empty())
+    filename = "(stdin)";
+
+  string baseName(strip_file_path(_filename));
+
+  if ((is_suffix_of (baseName, ".fa"))
+      || (is_suffix_of (baseName, ".fasta")))
+  {
+    string::size_type dotIx = baseName.find_last_of(".");
+    baseName = baseName.substr(0,dotIx);
+  }
+
+  if (baseName.empty())
+    baseName = "query";
+
+  // read the sequences
+
+  qd.name = "";
+
+  string line;
+  int lineNum = 0;
+  int queryLineNum = 0;
+  while (std::getline (in, line))
+  {
+    lineNum++;
+    if (line.empty()) continue;
+
+    if (not fileTypeKnown)
+    {
+      haveFastaHeaders = (line[0] == '>');
+      fileTypeKnown = true;
+    }
+
+    // if this is a fasta header, add the previous sequence to the list
+    // and start a new one
+
+    if (line[0] == '>')
+    {
+      if (not haveFastaHeaders)
+        fatal ("sequences precede first fasta header in \"" + filename + "\""
+               + " (at line " + std::to_string(lineNum) + ")");
+      if (not qd.name.empty())
+      {
+        if (qd.seq.empty())
+          cerr << "warning: ignoring empty sequence in \"" << filename << "\""
+               << " (at line " << std::to_string(queryLineNum) << ")" << endl;
+        else
+        {
+          qd.batchIx = queries.size();
+          queries.emplace_back(new Query(qd,threshold, repartitor, &_hash_windows, max_size, minimizer_size));
+        }
+      }
+
+      queryLineNum = lineNum;
+      qd.name = strip_blank_ends(line.substr(1));
+      if (qd.name.empty())
+        qd.name = baseName + std::to_string(lineNum);
+      qd.seq = "";
+    }
+
+      // if it's not a fasta header, and we're in fasta mode, add this line
+      // to the current sequence
+
+    else if (haveFastaHeaders)
+    {
+      qd.seq += line;
+    }
+
+      // otherwise we're in line-by-line mode, add this line to the list
+
+    else
+    {
+      qd.batchIx = queries.size();
+      qd.name = baseName + std::to_string(lineNum);
+      qd.seq  = line;
+      queries.emplace_back(new Query(qd,threshold, repartitor, &_hash_windows, max_size, minimizer_size));
+      qd.name = "";
+    }
+  }
+
+  // if we were accumulating a sequence, add it to the list
+
+  if (not qd.name.empty())
+  {
+    if (qd.seq.empty())
+      cerr << "warning: ignoring empty sequence in \"" << filename << "\""
+           << " (preceding line " << lineNum << ")" << endl;
+    else
+    {
+      qd.batchIx = queries.size();
+      queries.emplace_back(new Query(qd,threshold, repartitor, &_hash_windows, max_size, minimizer_size));
+    }
+  }
+
+  delete repartitor;
+}
+
 

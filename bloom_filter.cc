@@ -155,7 +155,7 @@ u64    BloomFilter::totalFileBytesRead  = 0;
 //----------
 
 BloomFilter::BloomFilter
-   (const string& _filename, const string& _repart_file_name)
+   (const string& _filename)
 	  :	ready(false),
 		manager(nullptr),
 		filename(_filename),
@@ -178,16 +178,10 @@ BloomFilter::BloomFilter
 
 	if (trackMemory)
 		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 1" << endl;
-
-	if (_repart_file_name != ""){
-		RepartFile f(_repart_file_name);
-		minimrepart = MinimRepart<uint64_t> (f);
-		}
 	}
 
 BloomFilter::BloomFilter
    (const string&	_filename,
-    const string& 	_repart_file_name,
 	u32				_kmerSize,
 	u32				_numHashes,
 	u64				_hashSeed1,
@@ -217,12 +211,6 @@ BloomFilter::BloomFilter
 
 	if (trackMemory)
 		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 2" << endl;
-	
-	
-	if (_repart_file_name != ""){
-		RepartFile f(_repart_file_name);
-		minimrepart = MinimRepart<uint64_t> (f);
-		}
 	}
 
 BloomFilter::BloomFilter
@@ -240,9 +228,7 @@ BloomFilter::BloomFilter
 		numBits(templateBf->numBits),
 		setSizeKnown(false),
 		setSize(0),
-		numBitVectors(templateBf->numBitVectors),
-		minimrepart(templateBf->minimrepart)
-
+		numBitVectors(templateBf->numBitVectors)
 	{
 	// (see note in first constructor)
 	for (int bvIx=0 ; bvIx<maxBitVectors ; bvIx++) bvs[bvIx] = nullptr;
@@ -519,7 +505,6 @@ void BloomFilter::copy_properties
 	hashSeed2   = templateBf->hashSeed2;
 	hashModulus = templateBf->hashModulus;
 	numBits     = templateBf->numBits;
-	minimrepart = templateBf->minimrepart;
 	}
 
 void BloomFilter::steal_bits
@@ -965,21 +950,6 @@ u64 BloomFilter::mer_to_position
 	{
 	// nota bene: we don't enforce numHashes == 1
 
-  	const size_t sm = 10;			// TODO: argument (or stored in the minimrepart file)
-	const size_t sk = mer.size();
-
-
-	uint64_t minim = minimrepart.get_minim_from_str(mer, sk, sm);
-	if (minim == numeric_limits<uint64_t>::max()){
-		// cerr << "No minimizer found" << endl;
-		return npos;
-	}
-	
-
-	uint part = minimrepart.get_partition(minim);
-
-
-
 	u64 pos = hasher1->hash(mer) % hashModulus;
 	if (pos < numBits) return pos;
 	              else return npos;  // position is *not* in the filter
@@ -1145,22 +1115,21 @@ int BloomFilter::lookup
 //----------
 
 AllSomeFilter::AllSomeFilter
-   (const string& _filename, const string& _repart_filename)
-	  :	BloomFilter(_filename, _repart_filename)
+   (const string& _filename)
+	  :	BloomFilter(_filename)
 	{
 	numBitVectors = 2;
 	}
 
 AllSomeFilter::AllSomeFilter
    (const string&	_filename,
-    const string& 	_repart_filename,
 	u32				_kmerSize,
 	u32				_numHashes,
 	u64				_hashSeed1,
 	u64				_hashSeed2,
 	u64				_numBits,
 	u64				_hashModulus)
-	  :	BloomFilter(_filename, _repart_filename, _kmerSize,
+	  :	BloomFilter(_filename, _kmerSize,
 	                _numHashes, _hashSeed1, _hashSeed2,
 	                _numBits, _hashModulus)
 	{
@@ -1230,22 +1199,21 @@ int AllSomeFilter::lookup
 //----------
 
 DeterminedFilter::DeterminedFilter
-   (const string& _filename, const string& _repart_filename)
-	  :	BloomFilter(_filename, _repart_filename)
+   (const string& _filename)
+	  :	BloomFilter(_filename)
 	{
 	numBitVectors = 2;
 	}
 
 DeterminedFilter::DeterminedFilter
    (const string&	_filename,
-	const string&	_repart_filename,
 	u32				_kmerSize,
 	u32				_numHashes,
 	u64				_hashSeed1,
 	u64				_hashSeed2,
 	u64				_numBits,
 	u64				_hashModulus)
-	  :	BloomFilter(_filename, _repart_filename, _kmerSize,
+	  :	BloomFilter(_filename, _kmerSize,
 	                _numHashes, _hashSeed1, _hashSeed2,
 	                _numBits, _hashModulus)
 	{
@@ -1289,23 +1257,21 @@ int DeterminedFilter::lookup
 //----------
 
 DeterminedBriefFilter::DeterminedBriefFilter
-   (const string& _filename,
-    const string&_repart_filename)
-	  :	DeterminedFilter(_filename, _repart_filename)
+   (const string& _filename)
+	  :	DeterminedFilter(_filename)
 	{
 	numBitVectors = 2;
 	}
 
 DeterminedBriefFilter::DeterminedBriefFilter
    (const string&	_filename,
-    const string&	_repart_filename,
 	u32				_kmerSize,
 	u32				_numHashes,
 	u64				_hashSeed1,
 	u64				_hashSeed2,
 	u64				_numBits,
 	u64				_hashModulus)
-	  :	DeterminedFilter(_filename, _repart_filename, _kmerSize,
+	  :	DeterminedFilter(_filename, _kmerSize,
 	                _numHashes, _hashSeed1, _hashSeed2,
 	                _numBits, _hashModulus)
 	{
@@ -1572,7 +1538,7 @@ int BloomFilter::vectors_per_filter
 //=== variant 1 ===
 
 BloomFilter* BloomFilter::bloom_filter
-   (const string&	filename, const string& repart_filename)
+   (const string&	filename)
 	{
 	string reducedName = filename;
 	
@@ -1587,13 +1553,13 @@ BloomFilter* BloomFilter::bloom_filter
 		}
 
 	if (is_suffix_of(reducedName,".detbrief.bf"))		// bfkind_determined_brief
-		return new DeterminedBriefFilter (filename, repart_filename);
+		return new DeterminedBriefFilter (filename);
 	if (is_suffix_of(reducedName,".det.bf"))			// bfkind_determined
-		return new DeterminedFilter (filename, repart_filename);
+		return new DeterminedFilter (filename);
 	if (is_suffix_of(reducedName,".allsome.bf"))		// bfkind_allsome
-		return new AllSomeFilter (filename, repart_filename);
+		return new AllSomeFilter (filename);
 	if (is_suffix_of(reducedName,".bf"))				// bfkind_simple
-		return new BloomFilter (filename, repart_filename);
+		return new BloomFilter (filename);
 
 	fatal ("error: BloomFilter::bloom_filter(\"" + filename + "\""
 	     + " is not implemented (file extension not recognized)");
@@ -1606,7 +1572,6 @@ BloomFilter* BloomFilter::bloom_filter
 BloomFilter* BloomFilter::bloom_filter
    (const u32		bfKind,
 	const string&	filename,
-	const string&	repart_filename, 
 	u32				kmerSize,
 	u32				numHashes,
 	u64				hashSeed1,
@@ -1618,20 +1583,20 @@ BloomFilter* BloomFilter::bloom_filter
 		{
 		case bfkind_simple:
 		case bfkind_intersection:  // internally treated the same as bfkind_simple
-			return new BloomFilter      (filename, repart_filename, kmerSize,
+			return new BloomFilter      (filename,kmerSize,
 			                             numHashes,hashSeed1,hashSeed2,
 			                             numBits,hashModulus);
 		case bfkind_allsome:
-			return new AllSomeFilter    (filename, repart_filename,kmerSize,
+			return new AllSomeFilter    (filename,kmerSize,
 			                             numHashes,hashSeed1,hashSeed2,
 			                             numBits,hashModulus);
 		case bfkind_determined:
-			return new DeterminedFilter (filename, repart_filename,kmerSize,
+			return new DeterminedFilter (filename,kmerSize,
 			                             numHashes,hashSeed1,hashSeed2,
 			                             numBits,hashModulus);
 		case bfkind_determined_brief:
 			return new DeterminedBriefFilter
-			                            (filename, repart_filename,kmerSize,
+			                            (filename,kmerSize,
 			                             numHashes,hashSeed1,hashSeed2,
 			                             numBits,hashModulus);
 		default:
@@ -1700,7 +1665,6 @@ BloomFilter* BloomFilter::bloom_filter
 
 vector<pair<string,BloomFilter*>> BloomFilter::identify_content
    (std::ifstream&	in,
-	const string& 	repart_filename,
 	const string&	filename)
 	{
 	wall_time_ty startTime;
@@ -1959,7 +1923,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 			if (reportCreation)
 				cerr << "about to construct BloomFilter for " << filename << " content " << whichBv << endl;
 			bf = bloom_filter(header->bfKind,
-			                  filename, repart_filename, header->kmerSize,
+			                  filename, header->kmerSize,
 			                  header->numHashes, header->hashSeed1, header->hashSeed2,
 			                  header->numBits, header->hashModulus);
 

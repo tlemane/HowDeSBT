@@ -7,6 +7,7 @@
 
 #include "bloom_filter.h"
 #include "query.h"
+//#include "kmtricks/repartition.hpp"
 
 class FileManager;
 
@@ -39,7 +40,8 @@ enum topofmt
 class BloomTree
 	{
 public:
-	BloomTree(const std::string& name="", const std::string& bfFilename="", const std::string& repart_filename="");
+	BloomTree(const std::string& name="", const std::string& bfFilename="");
+  BloomTree(const std::string& name, const std::string& bfFilename, const std::string& repartFileName, const std::string& winFileName);
 	BloomTree(BloomTree* tree);
 	virtual ~BloomTree();
 
@@ -96,7 +98,6 @@ public:
 	FileManager* manager;
 	std::string name;
 	std::string bfFilename;
-	std::string repart_filename;
 	std::string futureBfFilename;
 	BloomFilter* bf;
 	bool isLeaf;
@@ -137,6 +138,8 @@ public:
 	bool dbgAdjustPosList       = false;
 	bool dbgRankSelectLookup    = false;
 
+	std::string repartFileName;
+	std::string winFileName;
 public:
 	static BloomTree* read_topology(const std::string& filename, bool onlyLeaves=false);
 	};

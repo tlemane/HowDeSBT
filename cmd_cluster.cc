@@ -481,7 +481,7 @@ void ClusterCommand::find_leaf_vectors()
 		// can check that all the other vectors are consistent with it
 		// $$$ MULTI_VECTOR what if the filter contains more than one bit vector!
 
-		BloomFilter* bf = new BloomFilter (strip_blank_ends(bfFilename), "");
+		BloomFilter* bf = new BloomFilter (strip_blank_ends(bfFilename));
 		bf->preload();
 		BitVector* bv = bf->get_bit_vector();
 		if (bv->compressor() != bvcomp_uncompressed)
