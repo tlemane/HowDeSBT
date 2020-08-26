@@ -6,8 +6,11 @@
 #include <iostream>
 
 #include "bloom_filter.h"
-#include "query.h"
+//#include "query.h"
+#include "sabuhash.h"
 
+#define _KM_LIB_INCLUDE_
+#include "kmtricks/kmlib.hpp"
 //----------
 //
 // classes in this module--
@@ -26,6 +29,7 @@ class Query
 	{
 public:
 	Query(const querydata& qd, double threshold);
+	Query(const querydata& qd, double threshold, km::RepartFile *rep, vector<tuple<uint64_t, uint64_t>> *hashwin, uint64_t ms, uint32_t minimsize);
 	virtual ~Query();
 
 	virtual void kmerize (BloomFilter* bf, bool distinct=false, bool populateKmers=false);
@@ -90,6 +94,12 @@ public:
     std::vector<std::uint64_t> numFailedStack;
     std::vector<std::uint64_t> dbgKmerPositionsHashStack;
 
+  km::RepartFile *_repartitor;
+  std::vector<std::tuple<std::uint64_t, std::uint64_t>> *_win;
+  SabuHash *_h;
+  uint64_t _msize;
+  uint32_t _minimsize;
+
 public:
 	bool dbgKmerize    = false;
 	bool dbgKmerizeAll = false;
@@ -98,6 +108,7 @@ public:
 	static void read_query_file (std::istream& in, const std::string& filename,
 	                             double threshold,
 	                             std::vector<Query*>& queries);
+	static void read_query_file_km (std::istream& in, const std::string& filename, double threshold, std::vector<Query*>& queries, std::string& repartFileName, std::string& winFileName);
 	};
 
 #endif // query_H

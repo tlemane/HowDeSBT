@@ -67,6 +67,34 @@ BloomTree::BloomTree
 	}
 
 BloomTree::BloomTree
+  (const string& _name,
+   const string& _bfFilename,
+   const string& repartFileName,
+   const string& winFileName)
+  :	isDummy(_bfFilename.empty()),
+     manager(nullptr),
+     name(_name),
+     bfFilename(_bfFilename),
+     bf(nullptr),
+     isLeaf(true),
+     parent(nullptr),
+     fpRateKnown(false),
+     fpRate(0.0),
+     nodesShareFiles(false),
+     queryStats(nullptr),
+     repartFileName(repartFileName),
+     winFileName(winFileName)
+{
+  if (trackMemory)
+  {
+    if (bfFilename.empty())
+      cerr << "@+" << this << " constructor BloomTree(<no file>), variant 1" << endl;
+    else
+      cerr << "@+" << this << " constructor BloomTree(" << bfFilename << "), variant 1" << endl;
+  }
+}
+
+BloomTree::BloomTree
    (BloomTree* root)
 	  :	isDummy(root->isDummy),
 		manager(nullptr),

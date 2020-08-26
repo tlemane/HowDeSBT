@@ -15,6 +15,7 @@
 #include "cmd_cluster.h"
 #include "cmd_build_sbt.h"
 #include "cmd_query.h"
+#include "cmd_query_km.h"
 #include "cmd_version.h"
 #ifdef includeSecondaryCommands
 #include "cmd_query_bf.h"
@@ -100,6 +101,7 @@ int main
 	cmd->add_subcommand (new ClusterCommand      ("cluster"));
 	cmd->add_subcommand (new BuildSBTCommand     ("build"));
 	cmd->add_subcommand (new QueryCommand        ("query"));
+	cmd->add_subcommand (new QueryCommandKm      ("queryKm"));
 	cmd->add_subcommand (new VersionCommand      ("version"));
 
 	// secondary commands
