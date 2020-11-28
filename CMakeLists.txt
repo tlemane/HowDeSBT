@@ -10,6 +10,8 @@ set(CMAKE_CXX_FLAGS "-std=c++11")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 
+find_package(zlib)
+
 include(ExternalProject)
 ExternalProject_add(CROAR
     PREFIX CROAR
@@ -17,7 +19,7 @@ ExternalProject_add(CROAR
     INSTALL_COMMAND "")
 
 link_directories(${PROJECT_BINARY_DIR}/CROAR/src/CROAR-build/)
-include_directories(${PROJECT_BINARY_DIR}/CROAR/src/CROAR/include/)
+include_directories(${PROJECT_BINARY_DIR}/CROAR/src/CROAR/include/ ${ZLIB_INCLUDE_DIRS})
 
 if (NOT SDSLLIB OR NOT SDSLINC OR NOT KMTRICKS_INC OR NOT KMTRICKS_LIB)
     message("-DSDSLLIB=path -DSDSLINC=path -DKMTRICKS_INC=path -DKMTRICKS_LIB=path are required")
@@ -35,7 +37,7 @@ else()
 
     file(GLOB_RECURSE ProjectFiles *.cc)
 
-    set(LIBS kmtricks roaring sdsl pthread z)
+    set(LIBS kmtricks roaring sdsl pthread ZLIB::ZLIB lz4)
     set(DEPS CROAR SDSL)
     include_directories(${PROJECT_SOURCE_DIR})
 
