@@ -20,7 +20,7 @@ ExternalProject_add(CROAR
     INSTALL_COMMAND "")
 
 link_directories(${PROJECT_BINARY_DIR}/CROAR/src/CROAR-build/src)
-include_directories(${PROJECT_BINARY_DIR}/CROAR/src/CROAR/include/ ${ZLIB_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR}/thirdparty/CRoaring/include/ ${ZLIB_INCLUDE_DIRS})
 
 if (NOT SDSLLIB OR NOT SDSLINC OR NOT KMTRICKS_INC OR NOT KMTRICKS_LIB)
     message(FATAL_ERROR "-DSDSLLIB=path -DSDSLINC=path -DKMTRICKS_INC=path -DKMTRICKS_LIB=path are required")
@@ -42,8 +42,6 @@ else()
     set(DEPS CROAR SDSL)
     include_directories(${PROJECT_SOURCE_DIR})
 
-    set(CMAKE_INSTALL_RPATH ${PROJECT_BINARY_DIR}/CROAR/src/CROAR-build/)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     add_executable(howdesbt ${ProjectFiles})
     add_dependencies(howdesbt CROAR)
     target_link_libraries(howdesbt ${LIBS})
