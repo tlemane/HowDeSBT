@@ -15,7 +15,7 @@ find_package(ZLIB)
 include(ExternalProject)
 ExternalProject_add(CROAR
     PREFIX CROAR
-    GIT_REPOSITORY https://github.com/RoaringBitmap/CRoaring
+    SOURCE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/CRoaring
     CMAKE_ARGS -DROARING_BUILD_STATIC=ON
     INSTALL_COMMAND "")
 
@@ -23,7 +23,7 @@ link_directories(${PROJECT_BINARY_DIR}/CROAR/src/CROAR-build/src)
 include_directories(${PROJECT_BINARY_DIR}/CROAR/src/CROAR/include/ ${ZLIB_INCLUDE_DIRS})
 
 if (NOT SDSLLIB OR NOT SDSLINC OR NOT KMTRICKS_INC OR NOT KMTRICKS_LIB)
-    message("-DSDSLLIB=path -DSDSLINC=path -DKMTRICKS_INC=path -DKMTRICKS_LIB=path are required")
+    message(FATAL_ERROR "-DSDSLLIB=path -DSDSLINC=path -DKMTRICKS_INC=path -DKMTRICKS_LIB=path are required")
 else()
 
     if(NOT OUTPUT)
