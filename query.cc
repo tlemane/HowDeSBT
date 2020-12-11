@@ -97,9 +97,10 @@ void Query::kmerize(BloomFilter *bf,
 	SabuHash h(kmerSize);
 
 	size_t goodNtRunLen = 0;
-	u64 part;
-	u64 pos;
-	u64 wsize;
+	u64 part = 0;
+	u64 pos = 0;
+	u64 wsize = 0;
+	u66 bval = 0;
 	km::Kmer<uint64_t> kmk(true);
 	km::Minimizer<uint64_t> kmm(_minimsize);
 	for (size_t ix = 0; ix < seq.length(); ix++)
@@ -117,10 +118,11 @@ void Query::kmerize(BloomFilter *bf,
 		if (_repartitor && _win.size())
 		{
 			kmk.set_kmer(mer);
-			kmm.set_kmer(&kmk, _minimsize, true);
+			kmm.set_kmer(&kmk, _minimsize, false);
 			part = _repartitor->get(kmm.value());
 			wsize = NMOD8((uint64_t)ceil((double)_msize / (double)_win.size()));
-			pos = (h.hash(mer) % wsize) + (wsize * part);
+			bval = kmk.value();
+			pos = (h.hash(&bval) % wsize) + (wsize * part);
 		}
 		else
 		{
