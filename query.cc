@@ -118,7 +118,7 @@ void Query::kmerize(BloomFilter *bf,
 		if (_repartitor && _win.size())
 		{
 			kmk.set_kmer(mer);
-			kmm.set_kmer(&kmk, _minimsize, false);
+			kmm.set_kmer(&kmk, _minimsize, true);
 			part = _repartitor->get(kmm.value());
 			wsize = NMOD8((uint64_t)ceil((double)_msize / (double)_win.size()));
 			bval = kmk.value();
