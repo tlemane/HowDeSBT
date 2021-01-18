@@ -10,7 +10,9 @@ set(CMAKE_CXX_FLAGS "-std=c++11")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 
-find_package(ZLIB)
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+set(CMAKE_EXE_LINKER_FLAGS "-static"
+find_package(ZLIB REQUIRED)
 
 include(ExternalProject)
 ExternalProject_add(CROAR
@@ -22,7 +24,7 @@ ExternalProject_add(CROAR
 link_directories(${PROJECT_BINARY_DIR}/CROAR/src/CROAR-build/src)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/CRoaring/include/ ${ZLIB_INCLUDE_DIRS})
 
-if (NOT SDSLLIB OR NOT SDSLINC OR NOT KMTRICKS_INC OR NOT KMTRICKS_LIB)
+if (NOT SDSLLIB OR NOT SDSLINC OR NOT KMTRICKS_INC OR NOT KMTRICKS_LIB OR NOT LZ4INC OR NOT LZ4LIB)
     message(FATAL_ERROR "-DSDSLLIB=path -DSDSLINC=path -DKMTRICKS_INC=path -DKMTRICKS_LIB=path are required")
 else()
 
@@ -30,8 +32,8 @@ else()
         set(OUTPUT ${PROJECT_SOURCE_DIR}/bin)
     endif()
 
-    include_directories(${SDSLINC} ${KMTRICKS_INC})
-    link_directories(${SDSLLIB} ${KMTRICKS_LIB})
+    include_directories(${SDSLINC} ${KMTRICKS_INC} ${LZ4INC})
+    link_directories(${SDSLLIB} ${KMTRICKS_LIB} ${LZ4LIB})
 
     install(DIRECTORY DESTINATION ${OUTPUT})
     set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT})
@@ -42,9 +44,9 @@ else()
     set(DEPS CROAR SDSL)
     include_directories(${PROJECT_SOURCE_DIR})
 
-    add_executable(howdesbt ${ProjectFiles})
-    add_dependencies(howdesbt CROAR)
-    target_link_libraries(howdesbt ${LIBS})
+    add_executable(km_howdesbt ${ProjectFiles})
+    add_dependencies(km_howdesbt CROAR)
+    target_link_libraries(km_howdesbt ${LIBS})
 
 endif()
 
