@@ -82,6 +82,7 @@ void Query::kmerize(BloomFilter *bf,
 
 	kmerPositions.clear();
 	kmers.clear();
+	coveredBySharedKmer.clear();
 
 	// if the sequence is too short, there are no kmers
 
@@ -105,6 +106,7 @@ void Query::kmerize(BloomFilter *bf,
 	km::Minimizer<uint64_t> kmm(_minimsize);
 	for (size_t ix = 0; ix < seq.length(); ix++)
 	{
+		// finds the first position containing a good kmer.
 		if (not nt_is_acgt(seq[ix]))
 		{
 			goodNtRunLen = 0;
@@ -113,6 +115,7 @@ void Query::kmerize(BloomFilter *bf,
 		if (++goodNtRunLen < kmerSize)
 			continue;
 
+		// ix ends a valid kmer/
 		string mer = seq.substr(ix + 1 - kmerSize, kmerSize);
 
 		if (_repartitor && _win.size())
@@ -129,6 +132,8 @@ void Query::kmerize(BloomFilter *bf,
 			pos = bf->mer_to_position(mer);
 		}
 
+		assert(pos != BloomFilter::npos); // PIERRE: quels sont les cas où ceci peut arriver. Ces embetant car dans ce cas, la position des 
+		// kmers sur le vecteur ne correspond pas à la position sur la séquence.
 		if (pos != BloomFilter::npos)
 		{
 			if (distinct)
@@ -154,6 +159,7 @@ void Query::kmerize(BloomFilter *bf,
 
 void Query::sort_kmer_positions()
 {
+	assert(false); // not implemented
 	sort(kmerPositions.begin(), kmerPositions.end());
 }
 

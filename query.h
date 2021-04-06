@@ -55,6 +55,10 @@ public:
 										// .. assure that the kmerPositions[ix]
 										// .. corresponds to kmers[ix] for each
 										// .. ix
+	
+	std::vector<bool> coveredBySharedKmer; // each position covered by a shared
+										// .. kmer is set to true. Else false.
+
 
 	std::uint64_t numPositions;			// total size of kmerPositions
 	std::uint64_t neededToPass;			// number of kmers required, to judge

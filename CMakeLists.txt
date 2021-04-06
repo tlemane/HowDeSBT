@@ -10,8 +10,8 @@ set(CMAKE_CXX_FLAGS "-std=c++11")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 
-set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-set(CMAKE_EXE_LINKER_FLAGS "-static")
+#set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+#set(CMAKE_EXE_LINKER_FLAGS "-static")
 find_package(ZLIB REQUIRED)
 
 include(ExternalProject)

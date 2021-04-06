@@ -17,24 +17,7 @@
 #include "cmd_query.h"
 #include "cmd_query_km.h"
 #include "cmd_version.h"
-#ifdef includeSecondaryCommands
-#include "cmd_query_bf.h"
-#include "cmd_compress_bf.h"
-#include "cmd_combine_bf.h"
-#include "cmd_node_stats.h"
-#include "cmd_bit_stats.h"
-#include "cmd_validate_tree.h"
-#include "cmd_make_bv.h"
-#include "cmd_random_bv.h"
-#include "cmd_dump_bf.h"
-#include "cmd_dump_bv.h"
-#include "cmd_bf_distance.h"
-#include "cmd_load_test.h"
-#include "cmd_sabuhash_test.h"
-#include "cmd_validate_rrr.h"
-#include "cmd_bf_operate.h"
-#include "cmd_bv_operate.h"
-#endif // includeSecondaryCommands
+
 
 using std::string;
 using std::vector;
@@ -54,7 +37,6 @@ string programName = "howdesbt";
 //----------
 
 int main (int argc, char** argv);
-
 //----------
 //
 // classes--

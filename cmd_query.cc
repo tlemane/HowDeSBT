@@ -35,7 +35,7 @@ using std::endl;
 void QueryCommand::short_description
    (std::ostream& s)
 	{
-	s << commandName << "-- query a sequence bloom tree" << endl;
+	s << commandName << "-- query a sequence bloom tree built without kmtricks" << endl;
 	}
 
 void QueryCommand::usage

@@ -35,7 +35,7 @@ using std::endl;
 void QueryCommandKm::short_description
   (std::ostream& s)
 {
-  s << commandName << "-- query a sequence bloom tree" << endl;
+  s << commandName << "-- query a sequence bloom tree built with kmtricks bloom filters" << endl;
 }
 
 void QueryCommandKm::usage
@@ -413,6 +413,7 @@ QueryCommandKm::~QueryCommandKm()
 
 int QueryCommandKm::execute()
 {
+  std::cout<<"coucouc"<<std::endl;
   wall_time_ty startTime;
   if (reportTime) startTime = get_wall_time();
 
@@ -547,7 +548,7 @@ int QueryCommandKm::execute()
   // if we're to collect per-node query stats, tell each node that it is to
   // collect stats
 
-  if (collectNodeStats)
+  if (collectNodeStats) // PIERRE: check this
   {
     if (order.size() == 0)
       root->post_order(order);
@@ -584,6 +585,8 @@ int QueryCommandKm::execute()
 
   if (contains(debug,"sort"))
   {
+    cerr<<" debug sort not implemented "<<endl;
+    exit(EXIT_FAILURE);
     if (order.size() == 0)
       root->post_order(order);
     for (const auto& node : order)
