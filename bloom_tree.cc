@@ -1384,10 +1384,15 @@ void BloomTree::perform_batch_query
 	//……… ideally, we'd like to perform this for all siblings, then unload the
 	//……… .. siblings, before we descend to the siblings' children
 
+
+
+	const u64 kmerSize = bf->kmerSize;
+
+
 	qIx = 0;
 	while (qIx < activeQueries)
 		{ // note that activeQueries may change during this loop
-		Query* q = queries[qIx];
+		Query* q = queries[qIx]; // PIERRE: donne l'impression que l'on traite les queries independamment les unes des autres. Même en cas de kmers partagés
 		q->nodesExamined++;
 		bool queryPasses = false;
 		bool queryFails  = false;
@@ -1434,6 +1439,12 @@ void BloomTree::perform_batch_query
 					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
 					     << " pass=" << (q->numPassed+1) << endl;
 				q->numPassed++;
+				// pierre option: start query coverage (option to create)
+				u64 kmerEndingPos = q->kmerized2endpos[posIx];
+				for (u64 coveragePos = kmerEndingPos - kmerSize + 1 ; coveragePos <= kmerEndingPos ; coveragePos++)
+					q->coveredBySharedKmer[coveragePos] = true;
+				// end query coverage option 
+
 				if ((not completeKmerCounts) and (q->numPassed >= q->neededToPass))
 					{ queryPasses = true;  break; }
 				}
@@ -1463,7 +1474,7 @@ void BloomTree::perform_batch_query
 				posIx++;
 			}
 
-		q->numUnresolved = positionsToTest;
+		q->numUnresolved = positionsToTest; 
 
 		if (dbgLookups)
 			{
@@ -1669,6 +1680,7 @@ void BloomTree::query_matches_leaves
 		{
 		q->matches.emplace_back (name);
 		q->matchesNumPassed.emplace_back (q->numPassed);
+		q->matchesCoveredPos.emplace_back (std::count(q->coveredBySharedKmer.begin(), q->coveredBySharedKmer.end(), true));
 		if (q->adjustKmerCounts)
 			{
 			if (not fpRateKnown)
@@ -1787,6 +1799,8 @@ void BloomTree::perform_batch_count_kmer_hits
 
 	// operate on each query in the batch
 
+	const u64 kmerSize = bf->kmerSize;
+
 	for (auto& q : queries)
 		{
 		q->nodesExamined++;
@@ -1809,7 +1823,13 @@ void BloomTree::perform_batch_count_kmer_hits
 				if (dbgLookups)
 					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
 					     << " pass=" << (q->numPassed+1) << endl;
-				q->numPassed++;
+				q->numPassed++; 
+				// pierre option: start query coverage (option to create)
+				u64 kmerEndingPos = q->kmerized2endpos[posIx];
+				for (u64 coveragePos = kmerEndingPos - kmerSize + 1 ; coveragePos <= kmerEndingPos ; coveragePos++)
+					q->coveredBySharedKmer[coveragePos] = true;
+				// end query coverage option 
+
 				}
 			else // if (resolution == BloomFilter::unresolved)
 				{
@@ -1839,7 +1859,8 @@ void BloomTree::perform_batch_count_kmer_hits
 		// whether it passes or not
 
 		q->matches.emplace_back (name);
-		q->matchesNumPassed.emplace_back (q->numPassed);
+		q->matchesNumPassed.emplace_back (q->numPassed); // pierre: ici tu dois empiler le nombre de true de tes vecteurs.auto count = std::count(b.begin(), b.end(), true);
+		q->matchesCoveredPos.emplace_back (std::count(q->coveredBySharedKmer.begin(), q->coveredBySharedKmer.end(), true));
 		}
 
 	// we don't need this node's filter to be resident any more

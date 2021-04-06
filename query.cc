@@ -82,7 +82,7 @@ void Query::kmerize(BloomFilter *bf,
 
 	kmerPositions.clear();
 	kmers.clear();
-	coveredBySharedKmer.clear();
+	kmerized2endpos.clear();
 
 	// if the sequence is too short, there are no kmers
 
@@ -106,6 +106,8 @@ void Query::kmerize(BloomFilter *bf,
 	km::Minimizer<uint64_t> kmm(_minimsize);
 	for (size_t ix = 0; ix < seq.length(); ix++)
 	{
+		coveredBySharedKmer.push_back(false); // not a covered position yet.
+
 		// finds the first position containing a good kmer.
 		if (not nt_is_acgt(seq[ix]))
 		{
@@ -143,6 +145,9 @@ void Query::kmerize(BloomFilter *bf,
 					continue;
 			}
 			kmerPositions.emplace_back(pos);
+			if (true) // todo: option for query_coeverage
+				kmerized2endpos.emplace_back(ix);
+
 			if (populateKmers)
 				kmers.emplace_back(mer);
 		}

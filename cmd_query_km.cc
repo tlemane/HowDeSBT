@@ -804,7 +804,7 @@ void QueryCommandKm::read_queries()
 
 void QueryCommandKm::sort_matches_by_kmer_counts (void)
 {
-  if (adjustKmerCounts)
+  if (adjustKmerCounts) // PIERRE: CF CE QUE C'EST
   {
     for (auto& q : queries)
     {
@@ -908,12 +908,15 @@ void QueryCommandKm::print_matches_with_kmer_counts
     int matchIx = 0;
     for (auto& name : q->matches)
     {
-      u64 numPassed = q->matchesNumPassed[matchIx];
+      u64 numPassed = q->matchesNumPassed[matchIx]; 
+      u64 numCovered = q->matchesCoveredPos[matchIx]; // PIERRE BUG ICI
 
       if (backwardCompatibleStyle)
         out << q->name << " ";
 
+
       out << name
+          << " " << numCovered << "/"
           << " " << numPassed << "/" << q->numPositions;
       if (q->numPositions == 0)
         out << " 0"; // instead of dividing by zero

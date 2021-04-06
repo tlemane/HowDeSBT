@@ -56,8 +56,16 @@ public:
 										// .. corresponds to kmers[ix] for each
 										// .. ix
 	
-	std::vector<bool> coveredBySharedKmer; // each position covered by a shared
-										// .. kmer is set to true. Else false.
+	std::vector<size_t> kmerized2endpos; // ending position of each queried 
+										// .. kmer stored in kmerPositions. 
+										// .. Eg. if first kmer stored in kmerPositions
+										// ends position 42, and the second ends position 137, 
+										// then kmerized2endpos contains 42 and 137.
+
+									
+	std::vector<bool> coveredBySharedKmer; // for each position 
+										// true if covered by a shared kmer
+										// else false.
 
 
 	std::uint64_t numPositions;			// total size of kmerPositions
@@ -81,6 +89,13 @@ public:
 										// .. each match; only valid if the
 										// .. search reached the leaf without
 										// .. having been pruned
+	
+    std::vector<std::uint64_t> matchesCoveredPos;  // nb of positions covered by
+										// a shared kmer, corresponding to
+										// .. each match; only valid if the
+										// .. search reached the leaf without
+										// .. having been pruned
+										
     std::vector<std::uint64_t> matchesAdjustedHits;  // adjusted value of
 										// .. numPassed (corresponding to each
 										// .. match), to .. account for
