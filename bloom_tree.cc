@@ -1683,22 +1683,17 @@ void BloomTree::query_matches_leaves
 
 		// count number of positions covered by at least a shared kmer
 		// uses the endingPositionSharedKmer vector
-		std::vector<bool> coveredBySharedKmer (q->seq.length(), false); // for each position 
-										// true if covered by a shared kmer
-										// else false.
-
 		u64 lastTruePosition = -1;
+		u64 nbCoveredSharedKmer = 0;
 		for (std::vector<u64>::iterator it = q->endingPositionSharedKmer.begin(); it != q->endingPositionSharedKmer.end(); ++it){
 			const u64 stop = *it;
 			const u64 start = max(lastTruePosition + 1, stop - kmerSize + 1);
-			for (u64 idxCovered = start; idxCovered <= stop; idxCovered ++) 
-				coveredBySharedKmer[idxCovered] = true;
+			nbCoveredSharedKmer += stop - start + 1;
 			lastTruePosition = stop;
 		}
 		q->endingPositionSharedKmer.clear();
 		// for this match: add the number of positions covered by at least a shared kmer
-		q->matchesCoveredPos.emplace_back (std::count(coveredBySharedKmer.begin(), coveredBySharedKmer.end(), true));
-		
+		q->matchesCoveredPos.emplace_back (nbCoveredSharedKmer);
 
 		if (q->adjustKmerCounts)
 			{
@@ -1887,17 +1882,19 @@ void BloomTree::perform_batch_count_kmer_hits
 										// true if covered by a shared kmer
 										// else false.
 
+				// count number of positions covered by at least a shared kmer
+		// uses the endingPositionSharedKmer vector
 		u64 lastTruePosition = -1;
+		u64 nbCoveredSharedKmer = 0;
 		for (std::vector<u64>::iterator it = q->endingPositionSharedKmer.begin(); it != q->endingPositionSharedKmer.end(); ++it){
 			const u64 stop = *it;
-			const u64 start = max(lastTruePosition+1, stop - kmerSize + 1);
-			for (u64 idxCovered = start; idxCovered <= stop; idxCovered ++) 
-				coveredBySharedKmer[idxCovered] = true;
+			const u64 start = max(lastTruePosition + 1, stop - kmerSize + 1);
+			nbCoveredSharedKmer += stop - start + 1;
 			lastTruePosition = stop;
 		}
 		q->endingPositionSharedKmer.clear();
 		// for this match: add the number of positions covered by at least a shared kmer
-		q->matchesCoveredPos.emplace_back (std::count(coveredBySharedKmer.begin(), coveredBySharedKmer.end(), true));
+		q->matchesCoveredPos.emplace_back (nbCoveredSharedKmer);
 		
 
 	// we don't need this node's filter to be resident any more

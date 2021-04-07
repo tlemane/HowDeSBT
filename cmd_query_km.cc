@@ -908,7 +908,6 @@ void QueryCommandKm::print_matches_with_kmer_counts
     for (auto& name : q->matches)
     {
       u64 numPassed = q->matchesNumPassed[matchIx]; 
-      // PIERRE option
       u64 numCovered = q->matchesCoveredPos[matchIx]; 
 
 
@@ -918,7 +917,7 @@ void QueryCommandKm::print_matches_with_kmer_counts
 
       out << name
           << " " << numCovered << "/"<< q->seq.length()
-          << " " << numPassed << "/" << q->numPositions;
+          << " (" << numPassed << "/" << q->numPositions <<")";
       if (q->numPositions == 0)
         out << " 0"; // instead of dividing by zero
       else
@@ -970,9 +969,13 @@ void QueryCommandKm::print_kmer_hit_counts
     {
       u64 numPassed = q->matchesNumPassed[matchIx];
       bool queryPasses = (numPassed >= q->neededToPass);
+      u64 numCovered = q->matchesCoveredPos[matchIx]; 
+
 
       out << q->name << " vs " << name
-          << " " << numPassed << "/" << q->numPositions;
+          << " " << numCovered << "/"<< q->seq.length()
+          << " (" << numPassed << "/" << q->numPositions <<")";
+
       if (q->numPositions == 0)
         out << " 0"; // instead of dividing by zero
       else

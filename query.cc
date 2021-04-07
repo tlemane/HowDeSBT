@@ -133,8 +133,6 @@ void Query::kmerize(BloomFilter *bf,
 			pos = bf->mer_to_position(mer);
 		}
 
-		assert(pos != BloomFilter::npos); // PIERRE: quels sont les cas où ceci peut arriver. Ces embetant car dans ce cas, la position des 
-		// kmers sur le vecteur ne correspond pas à la position sur la séquence.
 		if (pos != BloomFilter::npos)
 		{
 			if (distinct)
