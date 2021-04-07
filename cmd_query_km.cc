@@ -547,7 +547,7 @@ int QueryCommandKm::execute()
   // if we're to collect per-node query stats, tell each node that it is to
   // collect stats
 
-  if (collectNodeStats) // PIERRE: check this
+  if (collectNodeStats)
   {
     if (order.size() == 0)
       root->post_order(order);
@@ -807,30 +807,33 @@ void QueryCommandKm::sort_matches_by_kmer_counts (void)
   {
     for (auto& q : queries)
     {
-      vector<tuple<u64,string,u64>> matches;
+      vector<tuple<u64,string,u64,u64>> matches;
       int matchIx = 0;
       for (auto& name : q->matches)
       {
         u64 numPassed    = q->matchesNumPassed[matchIx];
         u64 adjustedHits = q->matchesAdjustedHits[matchIx];
+        u64 numCovered   = q->matchesCoveredPos[matchIx];
 
         // (adjustedHits is negated sort will give decreasing order)
-        matches.emplace_back(std::make_tuple(-(adjustedHits+1),name,numPassed));
+        matches.emplace_back(std::make_tuple(-(adjustedHits+1),name,numPassed,numCovered));
         matchIx++;
       }
 
       sort(matches.begin(),matches.end());
 
       matchIx = 0;
-      for (const auto& matchTriplet : matches)
+      for (const auto& matchQuadruplet : matches)
       {
         u64    negAdjustedHits;
         string name;
         u64    numPassed;
-        std::tie(negAdjustedHits,name,numPassed) = matchTriplet;
+        u64    numCovered;
+        std::tie(negAdjustedHits,name,numPassed,numCovered) = matchQuadruplet;
         q->matches            [matchIx] = name;
         q->matchesNumPassed   [matchIx] = numPassed;
         q->matchesAdjustedHits[matchIx] = (-negAdjustedHits) - 1;
+        q->matchesCoveredPos  [matchIx] = numCovered;
         matchIx++;
       }
     }
@@ -839,26 +842,29 @@ void QueryCommandKm::sort_matches_by_kmer_counts (void)
   {
     for (auto& q : queries)
     {
-      vector<pair<u64,string>> matches;
+      vector<tuple<u64,string,u64>> matches;
       int matchIx = 0;
       for (auto& name : q->matches)
       {
         u64 numPassed = q->matchesNumPassed[matchIx];
+        u64 numCovered   = q->matchesCoveredPos[matchIx];
         // (numPassed is negated sort will give decreasing order)
-        matches.emplace_back(-(numPassed+1),name);
+        matches.emplace_back(-(numCovered+1),name, numPassed);
         matchIx++;
       }
 
       sort(matches.begin(),matches.end());
 
       matchIx = 0;
-      for (const auto& matchPair : matches)
+      for (const auto& matchTriplet : matches)
       {
-        u64    negNumPassed = matchPair.first;
-        string name         = matchPair.second;
-
-        q->matches         [matchIx] = name;
-        q->matchesNumPassed[matchIx] = (-negNumPassed) - 1;
+        string name;
+        u64    numPassed;
+        u64    negNumCovered;
+        std::tie(negNumCovered,name,numPassed) = matchTriplet;
+        q->matches            [matchIx] = name;
+        q->matchesNumPassed   [matchIx] = numPassed;
+        q->matchesCoveredPos  [matchIx] = (-negNumCovered) -1;
         matchIx++;
       }
     }
@@ -921,7 +927,7 @@ void QueryCommandKm::print_matches_with_kmer_counts
       if (q->numPositions == 0)
         out << " 0"; // instead of dividing by zero
       else
-        out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numPositions));
+        out << " " << std::setprecision(6) << std::fixed << (numCovered/float(q->seq.length()));
 
       if (adjustKmerCounts)
       {

@@ -1392,7 +1392,7 @@ void BloomTree::perform_batch_query
 	qIx = 0;
 	while (qIx < activeQueries)
 		{ // note that activeQueries may change during this loop
-		Query* q = queries[qIx]; // PIERRE: donne l'impression que l'on traite les queries independamment les unes des autres. Même en cas de kmers partagés
+		Query* q = queries[qIx]; // PIERRE: gives the impression that queries are treated independently of each other. Even in case of shared kmers
 		q->nodesExamined++;
 		bool queryPasses = false;
 		bool queryFails  = false;
@@ -1439,10 +1439,11 @@ void BloomTree::perform_batch_query
 					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
 					     << " pass=" << (q->numPassed+1) << endl;
 				q->numPassed++;
-				// pierre option: start query coverage (option to create)
+				
+				// for computing query coverage
 				u64 kmerEndingPos = q->kmerized2endpos[posIx];
 				q->endingPositionSharedKmer.push_back(kmerEndingPos);
-				// end query coverage option 
+				
 
 				if ((not completeKmerCounts) and (q->numPassed >= q->neededToPass))
 					{ queryPasses = true;  break; }
@@ -1841,10 +1842,9 @@ void BloomTree::perform_batch_count_kmer_hits
 					     << " pass=" << (q->numPassed+1) << endl;
 				q->numPassed++; 
 
-				// pierre option: start query coverage (option to create)
+				// query coverage computation 
 				u64 kmerEndingPos = q->kmerized2endpos[posIx];
 				q->endingPositionSharedKmer.push_back(kmerEndingPos);
-				// end query coverage option 
 
 				}
 			else // if (resolution == BloomFilter::unresolved)
