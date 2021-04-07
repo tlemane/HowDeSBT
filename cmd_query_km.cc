@@ -413,7 +413,6 @@ QueryCommandKm::~QueryCommandKm()
 
 int QueryCommandKm::execute()
 {
-  std::cout<<"coucouc"<<std::endl;
   wall_time_ty startTime;
   if (reportTime) startTime = get_wall_time();
 
@@ -909,14 +908,16 @@ void QueryCommandKm::print_matches_with_kmer_counts
     for (auto& name : q->matches)
     {
       u64 numPassed = q->matchesNumPassed[matchIx]; 
-      u64 numCovered = q->matchesCoveredPos[matchIx]; // PIERRE BUG ICI
+      // PIERRE option
+      u64 numCovered = q->matchesCoveredPos[matchIx]; 
+
 
       if (backwardCompatibleStyle)
         out << q->name << " ";
 
 
       out << name
-          << " " << numCovered << "/"
+          << " " << numCovered << "/"<< q->seq.length()
           << " " << numPassed << "/" << q->numPositions;
       if (q->numPositions == 0)
         out << " 0"; // instead of dividing by zero

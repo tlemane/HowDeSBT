@@ -56,16 +56,14 @@ public:
 										// .. corresponds to kmers[ix] for each
 										// .. ix
 	
-	std::vector<size_t> kmerized2endpos; // ending position of each queried 
+	std::vector<std::uint64_t> kmerized2endpos; // ending position of each queried 
 										// .. kmer stored in kmerPositions. 
 										// .. Eg. if first kmer stored in kmerPositions
 										// ends position 42, and the second ends position 137, 
 										// then kmerized2endpos contains 42 and 137.
 
 									
-	std::vector<bool> coveredBySharedKmer; // for each position 
-										// true if covered by a shared kmer
-										// else false.
+	std::vector<std::uint64_t> endingPositionSharedKmer; // Ending positions of a shared kmers for a target.
 
 
 	std::uint64_t numPositions;			// total size of kmerPositions

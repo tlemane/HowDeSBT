@@ -106,7 +106,6 @@ void Query::kmerize(BloomFilter *bf,
 	km::Minimizer<uint64_t> kmm(_minimsize);
 	for (size_t ix = 0; ix < seq.length(); ix++)
 	{
-		coveredBySharedKmer.push_back(false); // not a covered position yet.
 
 		// finds the first position containing a good kmer.
 		if (not nt_is_acgt(seq[ix]))

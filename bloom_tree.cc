@@ -1441,8 +1441,7 @@ void BloomTree::perform_batch_query
 				q->numPassed++;
 				// pierre option: start query coverage (option to create)
 				u64 kmerEndingPos = q->kmerized2endpos[posIx];
-				for (u64 coveragePos = kmerEndingPos - kmerSize + 1 ; coveragePos <= kmerEndingPos ; coveragePos++)
-					q->coveredBySharedKmer[coveragePos] = true;
+				q->endingPositionSharedKmer.push_back(kmerEndingPos);
 				// end query coverage option 
 
 				if ((not completeKmerCounts) and (q->numPassed >= q->neededToPass))
@@ -1671,6 +1670,7 @@ void BloomTree::perform_batch_query
 void BloomTree::query_matches_leaves
    (Query* q)
 	{
+	const u64 kmerSize = bf->kmerSize;
 	if (not isLeaf)
 		{
 		for (const auto& child : children)
@@ -1680,7 +1680,26 @@ void BloomTree::query_matches_leaves
 		{
 		q->matches.emplace_back (name);
 		q->matchesNumPassed.emplace_back (q->numPassed);
-		q->matchesCoveredPos.emplace_back (std::count(q->coveredBySharedKmer.begin(), q->coveredBySharedKmer.end(), true));
+
+		// count number of positions covered by at least a shared kmer
+		// uses the endingPositionSharedKmer vector
+		std::vector<bool> coveredBySharedKmer (q->seq.length(), false); // for each position 
+										// true if covered by a shared kmer
+										// else false.
+
+		u64 lastTruePosition = -1;
+		for (std::vector<u64>::iterator it = q->endingPositionSharedKmer.begin(); it != q->endingPositionSharedKmer.end(); ++it){
+			const u64 stop = *it;
+			const u64 start = max(lastTruePosition + 1, stop - kmerSize + 1);
+			for (u64 idxCovered = start; idxCovered <= stop; idxCovered ++) 
+				coveredBySharedKmer[idxCovered] = true;
+			lastTruePosition = stop;
+		}
+		q->endingPositionSharedKmer.clear();
+		// for this match: add the number of positions covered by at least a shared kmer
+		q->matchesCoveredPos.emplace_back (std::count(coveredBySharedKmer.begin(), coveredBySharedKmer.end(), true));
+		
+
 		if (q->adjustKmerCounts)
 			{
 			if (not fpRateKnown)
@@ -1801,8 +1820,10 @@ void BloomTree::perform_batch_count_kmer_hits
 
 	const u64 kmerSize = bf->kmerSize;
 
+	
 	for (auto& q : queries)
 		{
+
 		q->nodesExamined++;
 		q->numPassed = q->numFailed = 0;
 
@@ -1824,10 +1845,10 @@ void BloomTree::perform_batch_count_kmer_hits
 					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
 					     << " pass=" << (q->numPassed+1) << endl;
 				q->numPassed++; 
+
 				// pierre option: start query coverage (option to create)
 				u64 kmerEndingPos = q->kmerized2endpos[posIx];
-				for (u64 coveragePos = kmerEndingPos - kmerSize + 1 ; coveragePos <= kmerEndingPos ; coveragePos++)
-					q->coveredBySharedKmer[coveragePos] = true;
+				q->endingPositionSharedKmer.push_back(kmerEndingPos);
 				// end query coverage option 
 
 				}
@@ -1859,14 +1880,31 @@ void BloomTree::perform_batch_count_kmer_hits
 		// whether it passes or not
 
 		q->matches.emplace_back (name);
-		q->matchesNumPassed.emplace_back (q->numPassed); // pierre: ici tu dois empiler le nombre de true de tes vecteurs.auto count = std::count(b.begin(), b.end(), true);
-		q->matchesCoveredPos.emplace_back (std::count(q->coveredBySharedKmer.begin(), q->coveredBySharedKmer.end(), true));
+		q->matchesNumPassed.emplace_back (q->numPassed); 
+
+
+		std::vector<bool> coveredBySharedKmer (q->seq.length(), false); // for each position 
+										// true if covered by a shared kmer
+										// else false.
+
+		u64 lastTruePosition = -1;
+		for (std::vector<u64>::iterator it = q->endingPositionSharedKmer.begin(); it != q->endingPositionSharedKmer.end(); ++it){
+			const u64 stop = *it;
+			const u64 start = max(lastTruePosition+1, stop - kmerSize + 1);
+			for (u64 idxCovered = start; idxCovered <= stop; idxCovered ++) 
+				coveredBySharedKmer[idxCovered] = true;
+			lastTruePosition = stop;
 		}
+		q->endingPositionSharedKmer.clear();
+		// for this match: add the number of positions covered by at least a shared kmer
+		q->matchesCoveredPos.emplace_back (std::count(coveredBySharedKmer.begin(), coveredBySharedKmer.end(), true));
+		
 
 	// we don't need this node's filter to be resident any more
 
 	unloadable();
 	}
+}
 
 
 int BloomTree::lookup
