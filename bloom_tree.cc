@@ -145,7 +145,7 @@ BloomTree::~BloomTree()
 void BloomTree::preload()
 	{
 	if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename);
-	relay_debug_settings();
+	// relay_debug_settings();
 	bf->preload();
 	}
 
@@ -157,7 +157,7 @@ void BloomTree::load()
 			cerr << "BloomTree::load() creating new BF for \"" << name << "\"" << endl;
 		bf = BloomFilter::bloom_filter(bfFilename);
 		}
-	relay_debug_settings();
+	// relay_debug_settings();
 	bf->reportLoad = reportLoad;
 	bf->reportSave = reportSave;
 	if (manager != nullptr) bf->manager = manager;
@@ -181,7 +181,7 @@ void BloomTree::save(bool finished)
 			bv->unfinished();
 		}
 
-	relay_debug_settings();
+	// relay_debug_settings();
 	bf->save();
 	}
 
@@ -201,14 +201,13 @@ void BloomTree::unloadable()
 		}
 	}
 
-void BloomTree::relay_debug_settings()
-	{
-	if (bf != nullptr)
-		{
-		bf->dbgAdjustPosList    = dbgAdjustPosList;
-		bf->dbgRankSelectLookup = dbgRankSelectLookup;
-		}
-	}
+// void BloomTree::relay_debug_settings()
+	// {
+	// if (bf != nullptr)
+	// 	{
+	// 	bf->dbgRankSelectLookup = dbgRankSelectLookup;
+	// 	}
+	// }
 
 void BloomTree::add_child
    (BloomTree* offspring)
@@ -645,22 +644,19 @@ void BloomTree::construct_allsome_nodes (u32 compressor)
 	//   bvs[0] = Bsome(c) = B'some(c), no modification needed
 	//   bvs[1] = Ball(c)  = B'all(c) \ B'all(x)
 
-	if (not dbgInhibitChildUpdate)
-		{
-		BitVector* bvAll = bf->get_bit_vector(0);
-		for (const auto& child : children)
-			{
-			if (dbgTraversal)
-				cerr << "loading " << child->name << " for update" << endl;
-			child->load();
+	BitVector *bvAll = bf->get_bit_vector(0);
+	for (const auto &child : children)
+	{
+		if (dbgTraversal)
+			cerr << "loading " << child->name << " for update" << endl;
+		child->load();
 
-			child->bf->mask_with(bvAll,0);
+		child->bf->mask_with(bvAll, 0);
 
-			child->bf->reportSave = reportSave;
-			child->save(/*finished*/ true);
-			child->unloadable();
-			}
-		}
+		child->bf->reportSave = reportSave;
+		child->save(/*finished*/ true);
+		child->unloadable();
+	}
 
 	// if this node has no parent, we need to finish it now
 
@@ -843,24 +839,21 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 	//                                               = Bhow(c) intersect Bdet(c) intersect Idet(c)
 	//                                               = Bhow(c) intersect bvs[0]
 
-	if (not dbgInhibitChildUpdate)
-		{
-		BitVector* bvDet = bf->get_bit_vector(0);
-		for (const auto& child : children)
-			{
-			if (dbgTraversal)
-				cerr << "loading " << child->name << " for update" << endl;
-			child->load();
+	BitVector *bvDet = bf->get_bit_vector(0);
+	for (const auto &child : children)
+	{
+		if (dbgTraversal)
+			cerr << "loading " << child->name << " for update" << endl;
+		child->load();
 
-			child->bf->intersect_with_complement(bvDet,0);
-			BitVector* bvs0 = child->bf->get_bit_vector(0);
-			child->bf->intersect_with(bvs0,1);
+		child->bf->intersect_with_complement(bvDet, 0);
+		BitVector *bvs0 = child->bf->get_bit_vector(0);
+		child->bf->intersect_with(bvs0, 1);
 
-			child->bf->reportSave = reportSave;
-			child->save(/*finished*/ true);
-			child->unloadable();
-			}
-		}
+		child->bf->reportSave = reportSave;
+		child->save(/*finished*/ true);
+		child->unloadable();
+	}
 
 	// if this node has no parent, we need to finish it now
 	//   Idet(x) = active bits of Bdet(x)            = all 1s
@@ -1057,45 +1050,42 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 	//   bvs[0]  = Bdet(c) with inactive bits removed = Bdet(c) squeeze Idet(c)
 	//   bvs[1]  = Bhow(c) with inactive bits removed = Bhow(c) squeeze Ihow(c)
 
-	if (not dbgInhibitChildUpdate)
-		{
-		sdslbitvector* bDetX = bf->get_bit_vector(0)->bits;
-		sdslbitvector* iDetC = new sdslbitvector(*bDetX);
+	sdslbitvector *bDetX = bf->get_bit_vector(0)->bits;
+	sdslbitvector *iDetC = new sdslbitvector(*bDetX);
+	if (trackMemory)
+		cerr << "@+" << iDetC << " creating iDetC sdslbitvector for parent " << bfFilename << endl;
+	bitwise_complement(/*dst*/ iDetC->data(), bf->numBits);
+
+	for (const auto &child : children)
+	{
+		if (dbgTraversal)
+			cerr << "loading " << child->name << " for update and squeeze" << endl;
+		child->load();
+
+		sdslbitvector *bHowC = child->bf->get_bit_vector(0)->bits;
+		sdslbitvector *iHowC = new sdslbitvector(*bHowC);
 		if (trackMemory)
-			cerr << "@+" << iDetC << " creating iDetC sdslbitvector for parent " << bfFilename << endl;
-		bitwise_complement (/*dst*/ iDetC->data(), bf->numBits);
+			cerr << "@+" << iHowC << " creating iHowC sdslbitvector for child " << child->bfFilename << endl;
+		bitwise_and(/*dst*/ iHowC->data(), /*src*/ iDetC->data(), bf->numBits);
 
-		for (const auto& child : children)
-			{
-			if (dbgTraversal)
-				cerr << "loading " << child->name << " for update and squeeze" << endl;
-			child->load();
-
-			sdslbitvector* bHowC = child->bf->get_bit_vector(0)->bits;
-			sdslbitvector* iHowC = new sdslbitvector(*bHowC);
-			if (trackMemory)
-				cerr << "@+" << iHowC << " creating iHowC sdslbitvector for child " << child->bfFilename << endl;
-			bitwise_and (/*dst*/ iHowC->data(), /*src*/ iDetC->data(), bf->numBits);
-
-			child->bf->squeeze_by(iDetC,0);
-			child->bf->squeeze_by(iHowC,1);
-
-			if (trackMemory)
-				cerr << "@-" << iHowC << " discarding iHowC sdslbitvector for child " << child->bfFilename << endl;
-			delete iHowC;
-
-			child->bf->get_bit_vector(0)->filterInfo = DeterminedBriefFilter::squeezed;
-			child->bf->get_bit_vector(1)->filterInfo = DeterminedBriefFilter::squeezed;
-
-			child->bf->reportSave = reportSave;
-			child->save(/*finished*/ true);
-			child->unloadable();
-			}
+		child->bf->squeeze_by(iDetC, 0);
+		child->bf->squeeze_by(iHowC, 1);
 
 		if (trackMemory)
-			cerr << "@-" << iDetC << " discarding iDetC sdslbitvector for parent " << bfFilename << endl;
-		delete iDetC;
-		}
+			cerr << "@-" << iHowC << " discarding iHowC sdslbitvector for child " << child->bfFilename << endl;
+		delete iHowC;
+
+		child->bf->get_bit_vector(0)->filterInfo = DeterminedBriefFilter::squeezed;
+		child->bf->get_bit_vector(1)->filterInfo = DeterminedBriefFilter::squeezed;
+
+		child->bf->reportSave = reportSave;
+		child->save(/*finished*/ true);
+		child->unloadable();
+	}
+
+	if (trackMemory)
+		cerr << "@-" << iDetC << " discarding iDetC sdslbitvector for parent " << bfFilename << endl;
+	delete iDetC;
 
 	// if this node has no parent, we need to finish it now
 	//   Idet(x) = active bits of Bdet(x)             = all 1s
@@ -1256,7 +1246,6 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 
 void BloomTree::batch_query
    (vector<Query*>	queries,
-	bool			isLeafOnly,
 	bool			distinctKmers,
 	bool			completeKmerCounts)
 	{
@@ -1268,17 +1257,12 @@ void BloomTree::batch_query
 		fatal ("internal error: batch_query() unable to locate any bloom filter");
 	bf->preload();
 
-	if ((isLeafOnly) && (bf->kind() != bfkind_simple))
-		fatal ("batch_query() can't work for trees made of "
-		     + BloomFilter::filter_kind_to_string(bf->kind(),false) + " filters");
 
 	// convert the queries to kmers/positions
 
 	for (auto& q : queries)
 		{
 		q->kmerize(bf,distinctKmers);
-		if (dbgSortKmerPositions) q->sort_kmer_positions();
-		if (dbgKmerPositions)     q->dump_kmer_positions();
 		}
 
 	// make a local copy of the query list (consisting of the same instances)
@@ -1306,12 +1290,7 @@ void BloomTree::batch_query
 
 		localQueries.emplace_back(q);
 
-		if (dbgLookups)
-			{
-			cerr << q->name << ".numPositions = " << numPositions << endl;
-			cerr << q->name << ".neededToPass = " << q->neededToPass << endl;
-			cerr << q->name << ".neededToFail = " << q->neededToFail << endl;
-			}
+
 		}
 
 	// perform the query
@@ -1366,12 +1345,6 @@ void BloomTree::perform_batch_query
 		q->numUnresolvedStack.emplace_back(q->numUnresolved);
 		q->numPassedStack.emplace_back(q->numPassed);
 		q->numFailedStack.emplace_back(q->numFailed);
-
-		if (dbgKmerPositionsByHash)
-			{
-			u64 kmerPositionsHash = q->kmer_positions_hash(q->numUnresolved);
-			q->dbgKmerPositionsHashStack.emplace_back(kmerPositionsHash);
-			}
 		}
 
 	// make sure this node's filter is resident
@@ -1395,17 +1368,7 @@ void BloomTree::perform_batch_query
 		bool queryPasses = false;
 		bool queryFails  = false;
 
-		if (dbgLookups)
-			{
-			cerr << endl;
-			cerr << "  " << q->name << "(" << bfFilename << ")" << endl;
-			if (q->numUnresolved + q->numPassed + q->numFailed == q->numPositions)
-				cerr << "  U+P+F = " << q->numUnresolved << "+" << q->numPassed << "+" << q->numFailed << endl;
-			else
-				cerr << "  warning: we've lost some positions"
-				     << "; U+P+F = " << q->numUnresolved << "+" << q->numPassed << "+" << q->numFailed << " != " << q->numPositions << endl;
-			}
-
+		
 		u64 positionsToTest = q->numUnresolved;
 		u64 posIx = 0;
 		while (posIx < positionsToTest)
@@ -1422,9 +1385,7 @@ void BloomTree::perform_batch_query
 
 			if (resolution == BloomFilter::absent)
 				{
-				if (dbgLookups)
-					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
-					     << " fail=" << (q->numFailed+1) << endl;
+				
 				if (++q->numFailed >= q->neededToFail)
 					{ queryFails = true;  break; }
 				}
@@ -1433,9 +1394,7 @@ void BloomTree::perform_batch_query
 				// if we're NOT computing complete kmer counts, we can check
 				// whether we've observed enough hits to pass this node early
 
-				if (dbgLookups)
-					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
-					     << " pass=" << (q->numPassed+1) << endl;
+				
 				q->numPassed++;
 				
 				// for computing query coverage
@@ -1448,9 +1407,6 @@ void BloomTree::perform_batch_query
 				}
 			else // if (resolution == BloomFilter::unresolved)
 				{
-				if (dbgLookups)
-					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
-					     << " unres" << endl;
 				posIsResolved = false;
 				}
 
@@ -1474,32 +1430,8 @@ void BloomTree::perform_batch_query
 
 		q->numUnresolved = positionsToTest; 
 
-		if (dbgLookups)
-			{
-			if (queryPasses)
-				cerr << "  " << q->name << " passes " << bfFilename << endl;
-			else if (queryFails)
-				cerr << "  " << q->name << " fails " << bfFilename << endl;
-			else
-				cerr << "  " << q->name << " vs " << bfFilename
-				     << " U+P+F = " << q->numUnresolved << "+" << q->numPassed << "+" << q->numFailed << endl;
-			}
+		
 
-		if (dbgKmerPositions || dbgKmerPositionsByHash)
-			{
-			cerr << "positions after examining " << name;
-			if (!dbgKmerPositions)
-				cerr << " for " << q->name;
-			if (dbgKmerPositionsByHash)
-				{
-				u64 kmerPositionsHash = q->kmer_positions_hash(q->numUnresolved);
-				cerr << " (H.before=" << q->dbgKmerPositionsHashStack.back()
-				     <<  " H.after="  << kmerPositionsHash << ")";
-				}
-			cerr << ":" << endl;
-			if (dbgKmerPositions)
-				q->dump_kmer_positions(q->numUnresolved);
-			}
 
 		// if the query passes, add it to the list of matches for all leaves in
 		// this subtree (nb: this 'subtree' may just be a leaf); note that if
@@ -1586,12 +1518,6 @@ void BloomTree::perform_batch_query
 			{
 			Query* q = queries[qIx];
 			bf->adjust_positions_in_list(q->kmerPositions,q->numUnresolved);
-
-			if (dbgKmerPositions)
-				{
-				cerr << "positions after r/s adjusting " << name << ":";
-				q->dump_kmer_positions(q->numUnresolved);
-				}
 			}
 		}
 
@@ -1611,12 +1537,6 @@ void BloomTree::perform_batch_query
 			{
 			Query* q = queries[qIx];
 			bf->restore_positions_in_list(q->kmerPositions,q->numUnresolved);
-
-			if (dbgKmerPositions)
-				{
-				cerr << "positions after r/s restoring " << name << ":";
-				q->dump_kmer_positions(q->numUnresolved);
-				}
 			}
 		}
 
@@ -1639,29 +1559,6 @@ void BloomTree::perform_batch_query
 		q->numFailed = q->numFailedStack.back();
 		q->numFailedStack.pop_back();
 
-		u64 dbgKmerPositionsHash = 0;
-		if (dbgKmerPositionsByHash)
-			{
-			dbgKmerPositionsHash = q->dbgKmerPositionsHashStack.back();
-			q->dbgKmerPositionsHashStack.pop_back();
-			}
-
-		if (dbgKmerPositions || dbgKmerPositionsByHash)
-			{
-			cerr << "positions restored to pre-" << name << " state";
-			if (!dbgKmerPositions)
-				cerr << " for " << q->name;
-			if (dbgKmerPositionsByHash)
-				{
-				u64 kmerPositionsHash = q->kmer_positions_hash(q->numUnresolved);
-				cerr << " (H=" << kmerPositionsHash << ")";
-				if (kmerPositionsHash != dbgKmerPositionsHash)
-					cerr << " BAD (expected " << dbgKmerPositionsHash << ")";
-				}
-			cerr << ":" << endl;
-			if (dbgKmerPositions)
-				q->dump_kmer_positions(q->numUnresolved);
-			}
 		}
 
 	}
@@ -1699,7 +1596,6 @@ void BloomTree::query_matches_leaves
 
 void BloomTree::batch_count_kmer_hits
    (vector<Query*>	queries,
-	bool			isLeafOnly,
 	bool			distinctKmers)
 	{
 	// preload a root, and make sure that a leaf-only operation can work with
@@ -1710,16 +1606,11 @@ void BloomTree::batch_count_kmer_hits
 		fatal ("internal error: batch_count_kmer_hits() unable to locate any bloom filter");
 	bf->preload();
 
-	if ((isLeafOnly) && (bf->kind() != bfkind_simple))
-		fatal ("batch_count_kmer_hits() can't work for trees made of "
-		     + BloomFilter::filter_kind_to_string(bf->kind(),false) + " filters");
-
 	// convert the queries to kmers/positions
 
 	for (auto& q : queries)
 		{
 		q->kmerize(bf,distinctKmers);
-		if (dbgKmerPositions) q->dump_kmer_positions();
 		}
 
 	// make a local copy of the query list (consisting of the same instances)
@@ -1747,12 +1638,6 @@ void BloomTree::batch_count_kmer_hits
 
 		localQueries.emplace_back(q);
 
-		if (dbgLookups)
-			{
-			cerr << q->name << ".numPositions = " << numPositions << endl;
-			cerr << q->name << ".neededToPass = " << q->neededToPass << endl;
-			cerr << q->name << ".neededToFail = " << q->neededToFail << endl;
-			}
 		}
 
 	// perform the query; note that calculation will only occur at leaves
@@ -1807,16 +1692,10 @@ void BloomTree::perform_batch_count_kmer_hits
 
 			if (resolution == BloomFilter::absent)
 				{
-				if (dbgLookups)
-					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
-					     << " fail=" << (q->numFailed+1) << endl;
 				q->numFailed++;
 				}
 			else if (resolution == BloomFilter::present)
 				{
-				if (dbgLookups)
-					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
-					     << " pass=" << (q->numPassed+1) << endl;
 				q->numPassed++; 
 
 				// query coverage computation 
@@ -1826,27 +1705,11 @@ void BloomTree::perform_batch_count_kmer_hits
 				}
 			else // if (resolution == BloomFilter::unresolved)
 				{
-				if (dbgLookups)
-					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
-					     << " unres" << endl;
 				cerr << "warning: " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
 					     << " is unresolved!" << endl;
 				}
 			}
 
-		if (dbgLookups)
-			{
-			bool queryPasses = (q->numPassed >= q->neededToPass);
-			bool queryFails  = (q->numFailed >= q->neededToFail);
-
-			if (queryPasses)
-				cerr << "  " << q->name << " passes " << bfFilename << endl;
-			else if (queryFails)
-				cerr << "  " << q->name << " fails " << bfFilename << endl;
-			else
-				cerr << "  " << q->name << " vs " << bfFilename
-				     << " P+F = " << q->numPassed << "+" << q->numFailed << endl;
-			}
 
 		// add the query to the list of 'matches' for this leaf, regardless of
 		// whether it passes or not
@@ -2091,8 +1954,7 @@ static ParsedLine parse_topology_line
 // read_topology--
 
 BloomTree* BloomTree::read_topology
-   (const string&	filename,
-	bool			onlyLeaves)
+   (const string&	filename)
 	{
 	std::ifstream in (filename);
 	if (not in)
@@ -2116,96 +1978,41 @@ BloomTree* BloomTree::read_topology
 	// parse the topology file; this first method creates nodes for the entire
 	// tree
 
-	if (not onlyLeaves)
-		{
-		vector<BloomTree*> stack;
-		stack.push_back (root);
+	vector<BloomTree *> stack;
+	stack.push_back(root);
 
-		string line;
-		int lineNum = 0;
-		while (std::getline (in, line))
-			{
-			lineNum++;
-			line = strip_blank_ends (line);
-			if (line.empty()) continue;
+	string line;
+	int lineNum = 0;
+	while (std::getline(in, line))
+	{
+		lineNum++;
+		line = strip_blank_ends(line);
+		if (line.empty())
+			continue;
 
-			ParsedLine p = parse_topology_line(line, basePath);
-			if (p.hasProblem)
-				fatal ("error: unable to parse (\"" + filename
-					 + "\", line " + std::to_string(lineNum) + ")");
+		ParsedLine p = parse_topology_line(line, basePath);
+		if (p.hasProblem)
+			fatal("error: unable to parse (\"" + filename + "\", line " + std::to_string(lineNum) + ")");
 
-			numNodes++;
-			BloomTree* node = new BloomTree(p.name,p.bfFilename);
-			if (p.hasBracketedFilename) nodesShareFiles = true;
+		numNodes++;
+		BloomTree *node = new BloomTree(p.name, p.bfFilename);
+		if (p.hasBracketedFilename)
+			nodesShareFiles = true;
 
-			if ((numNodes == 0) and (p.level != 0))
-				fatal ("error: root must be at level zero (\"" + filename
-					 + "\", line " + std::to_string(lineNum) + ")");
+		if ((numNodes == 0) and (p.level != 0))
+			fatal("error: root must be at level zero (\"" + filename + "\", line " + std::to_string(lineNum) + ")");
 
-			while (stack.size() > p.level+1)
-				stack.pop_back ();
+		while (stack.size() > p.level + 1)
+			stack.pop_back();
 
-			if (p.level+1 != stack.size())
-				fatal ("error: tree depth jumps from level " + std::to_string(stack.size()-1)
-					 + " to " + std::to_string(p.level+1)
-					 + " (\"" + filename + "\", line " + std::to_string(lineNum) + ")");
+		if (p.level + 1 != stack.size())
+			fatal("error: tree depth jumps from level " + std::to_string(stack.size() - 1) + " to " + std::to_string(p.level + 1) + " (\"" + filename + "\", line " + std::to_string(lineNum) + ")");
 
-			BloomTree* parent = stack.back();
-			parent->add_child (node);
+		BloomTree *parent = stack.back();
+		parent->add_child(node);
 
-			stack.push_back (node);
-			}
-		}
-
-	// this second parsing method creates nodes only for the leaves
-
-	else
-		{
-		string prevBfFilename = "";
-		string prevName       = "";
-		size_t prevLevel      = 0;
-
-		string line;
-		int lineNum = 0;
-		while (std::getline (in, line))
-			{
-			lineNum++;
-			line = strip_blank_ends (line);
-			if (line.empty()) continue;
-
-			ParsedLine p = parse_topology_line(line, basePath);
-			if (p.hasProblem)
-				fatal ("error: unable to parse (\"" + filename
-					 + "\", line " + std::to_string(lineNum) + ")");
-
-			numNodes++;
-			if ((numNodes == 0) and (p.level != 0))
-				fatal ("error: root must be at level zero (\"" + filename
-					 + "\", line " + std::to_string(lineNum) + ")");
-
-			if (p.level > prevLevel+1)
-				fatal ("error: tree depth jumps from level " + std::to_string(prevLevel+1)
-					 + " to " + std::to_string(p.level+1)
-					 + " (\"" + filename + "\", line " + std::to_string(lineNum) + ")");
-
-			if ((p.level <= prevLevel) and (not prevBfFilename.empty()))
-				{
-				BloomTree* leaf = new BloomTree(prevName,prevBfFilename);
-				if (p.hasBracketedFilename) nodesShareFiles = true;
-				root->add_child (leaf);
-				}
-
-			prevBfFilename = p.bfFilename;
-			prevName       = p.name;
-			prevLevel      = p.level;
-			}
-
-		if (not prevBfFilename.empty())
-			{
-			BloomTree* leaf = new BloomTree(prevName,prevBfFilename);
-			root->add_child (leaf);
-			}
-		}
+		stack.push_back(node);
+	}
 
 	in.close();
 

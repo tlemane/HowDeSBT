@@ -61,68 +61,7 @@ using std::endl;
 #define dbgRestore_pos_list2            ;
 #endif // not bloom_filter_supportDebug
 
-#ifdef bloom_filter_supportDebug
 
-#define dbgAdd_dump_pos_with_mer                                             \
-	if (dbgAdd) cerr << mer << " write " << pos << endl;
-
-#define dbgAdd_dump_h_pos_with_mer                                           \
-	if (dbgAdd) cerr << mer << " write" << h << " " << pos << endl;
-
-#define dbgAdd_dump_pos                                                      \
-	if (dbgAdd) cerr << "write " << pos << endl;
-
-#define dbgAdd_dump_h_pos                                                    \
-	if (dbgAdd) cerr << "write" << h << " " << pos << endl;
-
-#define dbgContains_dump_pos_with_mer                                        \
-	if (dbgContains) cerr << mer << " read " << pos << endl;
-
-#define dbgContains_dump_h_pos_with_mer                                      \
-	if (dbgContains) cerr << mer << " read" << h << " " << pos << endl;
-
-#define dbgContains_dump_pos                                                 \
-	if (dbgContains) cerr << "read " << pos << endl;
-
-#define dbgContains_dump_h_pos                                               \
-	if (dbgContains) cerr << "read" << h << " " << pos << endl;
-
-#define dbgLookup_determined_brief1                                          \
-	{                                                                        \
-	if (dbgRankSelectLookup)                                                 \
-		cerr << "    DeterminedBriefFilter::lookup(" << pos << ")" << endl;  \
-	if (dbgRankSelectLookup)                                                 \
-		{                                                                    \
-		if ((*bvDet)[pos] == 0)                                              \
-			cerr << "      bvDet[" << pos << "] == 0 --> unresolved" << endl;\
-		else                                                                 \
-			cerr << "      bvDet[" << pos << "] == 1" << endl;               \
-		}                                                                    \
-	}
-
-#define dbgLookup_determined_brief2                                          \
-	if (dbgRankSelectLookup)                                                 \
-		cerr << "      bvHow[" << howPos << "] == " << (*bvHow)[howPos]      \
-		     << " --> " << (((*bvHow)[howPos]==1)?"present":"absent")        \
-		     << endl;
-
-#define dbgAdjust_pos_list1                                                  \
-	if (dbgAdjustPosList)                                                    \
-		cerr << "  adjust_positions_in_list(" << numUnresolved << ")" << endl;
-
-#define dbgAdjust_pos_list2                                                  \
-	if (dbgAdjustPosList)                                                    \
-		cerr << "    " << pos << " --> " << (pos-rank) << endl;
-
-#define dbgRestore_pos_list1                                                 \
-	if (dbgAdjustPosList)                                                    \
-		cerr << "  restore_positions_in_list(" << numUnresolved << ")" << endl;
-
-#define dbgRestore_pos_list2                                                 \
-	if (dbgAdjustPosList)                                                    \
-		cerr << "    " << pos << " --> " << kmerPositions[posIx] << endl;
-
-#endif // bloom_filter_supportDebug
 
 //----------
 //

@@ -14,7 +14,6 @@
 // subcommands
 #include "cmd_cluster.h"
 #include "cmd_build_sbt.h"
-#include "cmd_query.h"
 #include "cmd_query_km.h"
 #include "cmd_version.h"
 
@@ -82,48 +81,11 @@ int main
 
 	cmd->add_subcommand (new ClusterCommand      ("cluster"));
 	cmd->add_subcommand (new BuildSBTCommand     ("build"));
-	cmd->add_subcommand (new QueryCommand        ("query"));
 	cmd->add_subcommand (new QueryCommandKm      ("queryKm"));
 	cmd->add_subcommand (new VersionCommand      ("version"));
 
 	// secondary commands
 
-#ifdef includeSecondaryCommands
-	cmd->add_subcommand (nullptr);  // marks start of secondary commands
-
-	cmd->add_subcommand (new QueryBFCommand      ("querybf"));
-	cmd->add_command_alias                       ("bfquery");
-	cmd->add_command_alias                       ("queryfilter");
-	cmd->add_subcommand (new CompressBFCommand   ("compressbf"));
-	cmd->add_command_alias                       ("bfcompress");
-	cmd->add_command_alias                       ("compressfilter");
-	cmd->add_command_alias                       ("compress");
-	cmd->add_subcommand (new CombineBFCommand    ("combinebf"));
-	cmd->add_command_alias                       ("bfcombine");
-	cmd->add_command_alias                       ("unitebf");
-	cmd->add_command_alias                       ("bfunite");
-	cmd->add_subcommand (new NodeStatsCommand    ("nodestats"));
-	cmd->add_command_alias                       ("treestats");
-	cmd->add_subcommand (new BitStatsCommand     ("bitstats"));
-	cmd->add_subcommand (new ValidateTreeCommand ("validatetree"));
-	cmd->add_command_alias                       ("treevalidate");
-	cmd->add_subcommand (new MakeBVCommand       ("makebv"));
-	cmd->add_subcommand (new RandomBVCommand     ("randombv"));
-	cmd->add_subcommand (new DumpBFCommand       ("dumpbf"));
-	cmd->add_command_alias                       ("bfdump");
-	cmd->add_subcommand (new DumpBVCommand       ("dumpbv"));
-	cmd->add_command_alias                       ("bvdump");
-	cmd->add_subcommand (new BFDistanceCommand   ("bfdistance"));
-	cmd->add_command_alias                       ("bfdist");
-	cmd->add_subcommand (new LoadTestCommand     ("loadtest"));
-	cmd->add_subcommand (new SabuhashTestCommand ("sabuhash"));
-	cmd->add_subcommand (new ValidateRrrCommand  ("validaterrr"));
-	cmd->add_command_alias                       ("rrrvalidate");
-	cmd->add_subcommand (new BFOperateCommand    ("bfoperate"));
-	cmd->add_command_alias                       ("bfop");
-	cmd->add_subcommand (new BVOperateCommand    ("bvoperate"));
-	cmd->add_command_alias                       ("bvop");
-#endif // includeSecondaryCommands
 
 	// perform the user's command; if it was succesful, collect any additional
 	// command(s) it would like us to perform

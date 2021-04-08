@@ -35,16 +35,11 @@ public:
   std::string winFileName;
   double generalQueryThreshold;
   bool sortByKmerCounts;
-  bool onlyLeaves;
   bool distinctKmers;
   bool useFileManager;
   bool checkConsistency;			// only meaningful if useFileManager is false
-  bool justReportKmerCounts;
-  bool countAllKmerHits;
-  bool reportNodesExamined;
-  bool collectNodeStats;
+  // bool collectNodeStats;
   bool reportTime;
-  bool backwardCompatibleStyle;
   bool completeKmerCounts;
 
   std::vector<Query*> queries;

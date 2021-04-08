@@ -71,8 +71,7 @@ Query::~Query()
 }
 
 void Query::kmerize(BloomFilter *bf,
-					bool distinct,
-					bool populateKmers)
+					bool distinct)
 {
 	bf->preload();
 	u32 kmerSize = bf->kmerSize;
@@ -81,7 +80,6 @@ void Query::kmerize(BloomFilter *bf,
 		fatal("internal error: " + bf->identity() + " uses more than one hash function");
 
 	kmerPositions.clear();
-	kmers.clear();
 	kmerized2endpos.clear();
 
 	// if the sequence is too short, there are no kmers
@@ -144,90 +142,15 @@ void Query::kmerize(BloomFilter *bf,
 			kmerPositions.emplace_back(pos);
 			if (true) // todo: option for query_coeverage
 				kmerized2endpos.emplace_back(ix);
-
-			if (populateKmers)
-				kmers.emplace_back(mer);
 		}
 
-		if (dbgKmerize || dbgKmerizeAll)
-		{
-			if (pos != BloomFilter::npos)
-				cerr << mer << " -> " << pos << endl;
-			else if (dbgKmerizeAll)
-				cerr << mer << " -> (no)" << endl;
-		}
 	}
 }
 
-void Query::sort_kmer_positions()
-{
-	assert(false); // not implemented
-	sort(kmerPositions.begin(), kmerPositions.end());
-}
 
-void Query::dump_kmer_positions(u64 _numUnresolved)
-{
-	// we dump the list as, e.g.
-	//   1,2,3,4 (5,6,7)
-	// where 5,6,7 is the "resolved" part of the list;  _numUnresolved=-1 can
-	// be used to just print the whole list without parenthesizing part of it
 
-	cerr << name << ".positions = ";
-	bool firstOutput = true;
-	bool parenWritten = false;
-	u64 posIx = 0;
-	for (auto &pos : kmerPositions)
-	{
-		if (posIx == _numUnresolved)
-		{
-			cerr << " (" << pos;
-			parenWritten = true;
-			firstOutput = false;
-		}
-		else if (firstOutput)
-		{
-			cerr << pos;
-			firstOutput = false;
-		}
-		else
-			cerr << "," << pos;
-		posIx++;
-	}
 
-	if (parenWritten)
-		cerr << ")";
-	else if (_numUnresolved != (u64)-1)
-		cerr << " ()";
-	cerr << endl;
-}
 
-u64 Query::kmer_positions_hash(u64 _numUnresolved)
-{
-	// we compute a simple permutation-invariant hash on a prefix of the list;
-	// _numUnresolved=-1 indicates that we compute over the whole list
-
-	u64 posSum = 0;
-	u64 posXor = 0;
-
-	u64 posIx = 0;
-	for (auto &pos : kmerPositions)
-	{
-		if (posIx == _numUnresolved)
-			break;
-		posSum += pos;
-		posXor ^= pos;
-		posIx++;
-	}
-
-	posSum ^= posSum << 17;
-	posSum ^= posSum >> 47;
-
-	posXor ^= posXor >> 47;
-	posXor ^= posXor << 17;
-	posXor ^= posXor << 34;
-
-	return (posSum + posXor) & 0x1FFFFFFF; // (returning only 29 bits)
-}
 
 //----------
 //
@@ -264,111 +187,6 @@ u64 Query::kmer_positions_hash(u64 _numUnresolved)
 //
 //----------
 
-void Query::read_query_file(std::istream &in,
-							const string &_filename,
-							double threshold,
-							vector<Query *> &queries)
-{
-	bool fileTypeKnown = false;
-	bool haveFastaHeaders = false;
-	querydata qd;
-
-	// derive a name to use for nameless sequences
-
-	string filename(_filename);
-	if (filename.empty())
-		filename = "(stdin)";
-
-	string baseName(strip_file_path(_filename));
-
-	if ((is_suffix_of(baseName, ".fa")) || (is_suffix_of(baseName, ".fasta")))
-	{
-		string::size_type dotIx = baseName.find_last_of(".");
-		baseName = baseName.substr(0, dotIx);
-	}
-
-	if (baseName.empty())
-		baseName = "query";
-
-	// read the sequences
-
-	qd.name = "";
-
-	string line;
-	int lineNum = 0;
-	int queryLineNum = 0;
-	while (std::getline(in, line))
-	{
-		lineNum++;
-		if (line.empty())
-			continue;
-
-		if (not fileTypeKnown)
-		{
-			haveFastaHeaders = (line[0] == '>');
-			fileTypeKnown = true;
-		}
-
-		// if this is a fasta header, add the previous sequence to the list
-		// and start a new one
-
-		if (line[0] == '>')
-		{
-			if (not haveFastaHeaders)
-				fatal("sequences precede first fasta header in \"" + filename + "\"" + " (at line " + std::to_string(lineNum) + ")");
-			if (not qd.name.empty())
-			{
-				if (qd.seq.empty())
-					cerr << "warning: ignoring empty sequence in \"" << filename << "\""
-						 << " (at line " << std::to_string(queryLineNum) << ")" << endl;
-				else
-				{
-					qd.batchIx = queries.size();
-					queries.emplace_back(new Query(qd, threshold));
-				}
-			}
-
-			queryLineNum = lineNum;
-			qd.name = strip_blank_ends(line.substr(1));
-			if (qd.name.empty())
-				qd.name = baseName + std::to_string(lineNum);
-			qd.seq = "";
-		}
-
-		// if it's not a fasta header, and we're in fasta mode, add this line
-		// to the current sequence
-
-		else if (haveFastaHeaders)
-		{
-			qd.seq += line;
-		}
-
-		// otherwise we're in line-by-line mode, add this line to the list
-
-		else
-		{
-			qd.batchIx = queries.size();
-			qd.name = baseName + std::to_string(lineNum);
-			qd.seq = line;
-			queries.emplace_back(new Query(qd, threshold));
-			qd.name = "";
-		}
-	}
-
-	// if we were accumulating a sequence, add it to the list
-
-	if (not qd.name.empty())
-	{
-		if (qd.seq.empty())
-			cerr << "warning: ignoring empty sequence in \"" << filename << "\""
-				 << " (preceding line " << lineNum << ")" << endl;
-		else
-		{
-			qd.batchIx = queries.size();
-			queries.emplace_back(new Query(qd, threshold));
-		}
-	}
-}
 
 void Query::read_query_file_km(std::istream &in,
 							   const string &_filename,
