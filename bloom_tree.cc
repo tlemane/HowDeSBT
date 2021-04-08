@@ -1258,8 +1258,7 @@ void BloomTree::batch_query
    (vector<Query*>	queries,
 	bool			isLeafOnly,
 	bool			distinctKmers,
-	bool			completeKmerCounts,
-    bool            adjustKmerCounts)
+	bool			completeKmerCounts)
 	{
 	// preload a root, and make sure that a leaf-only operation can work with
 	// the type of filter we have
@@ -1304,7 +1303,6 @@ void BloomTree::batch_query
 		q->neededToPass  = ceil (q->threshold * numPositions);
 		q->neededToFail  = (numPositions - q->neededToPass) + 1;
 		q->nodesExamined = 0;
-		q->adjustKmerCounts = adjustKmerCounts;
 
 		localQueries.emplace_back(q);
 
@@ -1696,26 +1694,6 @@ void BloomTree::query_matches_leaves
 		// for this match: add the number of positions covered by at least a shared kmer
 		q->matchesCoveredPos.emplace_back (nbCoveredSharedKmer);
 
-		if (q->adjustKmerCounts)
-			{
-			if (not fpRateKnown)
-				{
-				if (not bf->setSizeKnown)
-					fatal ("failure: " + bfFilename + " doesn't support adjusted kmer counts"
-					   + "\n(it doesn't contain the information needed to estimate false positive rate)");
-				u64 numItems = bf->setSize;
-				fpRate = BloomFilter::false_positive_rate(bf->numHashes,bf->numBits,numItems);
-				fpRateKnown = true;
-				}
-
-			u64 querySize = q->numPositions;
-			u64 bfHits    = q->numPassed;
-			double observedContainment = ((double) bfHits) / querySize;
-			double adjustedContainment = (observedContainment-fpRate) / (1-fpRate);
-			if (adjustedContainment < 0.0) adjustedContainment = 0.0;
-			u64 adjustedHits = round(adjustedContainment * querySize);
-			q->matchesAdjustedHits.emplace_back (adjustedHits);
-			}
 		}
 	}
 
@@ -1766,7 +1744,6 @@ void BloomTree::batch_count_kmer_hits
 		q->neededToPass  = ceil (q->threshold * numPositions);
 		q->neededToFail  = (numPositions - q->neededToPass) + 1;
 		q->nodesExamined = 0;
-		q->adjustKmerCounts = false;
 
 		localQueries.emplace_back(q);
 

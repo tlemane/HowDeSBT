@@ -73,8 +73,7 @@ public:
 
 	virtual void batch_query (std::vector<Query*> queries,
 	                          bool isLeafOnly=false, bool distinctKmers=false,
-	                          bool completeKmerCounts=false,
-	                          bool adjustKmerCounts=false);
+	                          bool completeKmerCounts=false);
 private:
 	virtual void perform_batch_query (std::uint64_t activeQueries, std::vector<Query*> queries,
 	                                  bool completeKmerCounts=false);

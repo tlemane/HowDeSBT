@@ -34,7 +34,6 @@ public:
   std::string repartFileName;
   std::string winFileName;
   double generalQueryThreshold;
-  bool adjustKmerCounts;
   bool sortByKmerCounts;
   bool onlyLeaves;
   bool distinctKmers;
