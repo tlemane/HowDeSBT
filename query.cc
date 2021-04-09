@@ -144,6 +144,10 @@ void Query::kmerize(BloomFilter *bf,
 		}
 
 	}
+	// not needed anymore
+	seq_length = seq.length();
+	seq.clear(); 
+	seq.shrink_to_fit(); 
 }
 
 

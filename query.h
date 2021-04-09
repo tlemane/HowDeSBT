@@ -38,6 +38,7 @@ public:
 	std::uint32_t batchIx;	// index of this query within a batch
 	std::string name;
 	std::string seq;		// nucleotide sequence
+	std::uint64_t seq_length; 
 	double threshold;		// search threshold
 	std::vector<std::uint64_t> kmerPositions; // the kmers (converted to hash
 										// .. values) corresponding to this

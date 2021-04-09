@@ -1362,7 +1362,7 @@ void BloomTree::perform_batch_query
 	qIx = 0;
 	while (qIx < activeQueries)
 		{ // note that activeQueries may change during this loop
-		Query* q = queries[qIx]; // PIERRE: gives the impression that queries are treated independently of each other. Even in case of shared kmers
+		Query* q = queries[qIx]; 
 		q->nodesExamined++;
 		bool queryPasses = false;
 		bool queryFails  = false;
@@ -1413,17 +1413,20 @@ void BloomTree::perform_batch_query
 			// the list; note that we *don't* increase posIx in this case, as
 			// the next iteration needs to process the position we just swapped
 			// into that slot
-			// PIERRE: doute ici !!!
-			// PIERRE: is this restored latter by restore_positions_in_list ?
-			// PIERRE: else there is a shift between 
-			// PIERRE: 		q->kmerPositions
-			// PIERRE: 		and 
-			// PIERRE: 		q->kmerized2endpos
 			if ((posIsResolved) and (not isLeaf))
 				{
 				positionsToTest--;
 				q->kmerPositions[posIx] = q->kmerPositions[positionsToTest];
 				q->kmerPositions[positionsToTest] = pos;
+
+				// Pierre Peterlongo - untested code: condition never met during my tests (april 2021)
+				// .. even on large queries.
+				// Exchanges q->kmerized2endpos[posIx] and q->kmerized2endpos[positionsToTest] to 
+				// .. stay in line with q->kmerPositions 
+				std::uint64_t temp 					= q->kmerized2endpos[posIx];
+				q->kmerized2endpos[posIx]			= q->kmerized2endpos[positionsToTest];
+				q->kmerized2endpos[positionsToTest] = temp;
+				// Pierre Peterlongo - end untested code. 
 				}
 
 			// otherwise, move on to the next pos
@@ -1515,7 +1518,7 @@ void BloomTree::perform_batch_query
 	// this would be a null operation, but for nodes that use rank/select the
 	// position values are modified to reflect the removal of inactive bits in
 	// the bloom filters
-	// PIERRE: doute ici
+
 	if (isPositionAdjustor)
 		{
 		for (qIx=0 ; qIx<activeQueries ; qIx++)
@@ -1534,7 +1537,7 @@ void BloomTree::perform_batch_query
 		}
 
 	// restore kmer/position lists as we move up the tree
-	// PIERRE: doute ici
+
 	if (isPositionAdjustor)
 		{
 		for (qIx=0 ; qIx<activeQueries ; qIx++)
@@ -1583,13 +1586,27 @@ void BloomTree::query_matches_leaves
 
 		// count number of positions covered by at least a shared kmer
 		// uses the endingPositionSharedKmer vector
-		u64 lastTruePosition = -1;
+		u64 lastCoveragePosition = 0;
 		u64 nbCoveredSharedKmer = 0;
+		// need to sort back the matched kmer positions
+		sort(q->endingPositionSharedKmer.begin(), q->endingPositionSharedKmer.end());
+		bool never_covered = true;
+		// must sort the endingPositionSharedKmer vector in case 
 		for (std::vector<u64>::iterator it = q->endingPositionSharedKmer.begin(); it != q->endingPositionSharedKmer.end(); ++it){
 			const u64 stop = *it;
-			const u64 start = max(lastTruePosition + 1, stop - kmerSize + 1);
+			// Starting position of the new shared kmer is 
+			// either the starting position of this shared kmer : stop - kmerSize + 1
+			// or the first position that was not covered in case of overlap (lastCoveragePosition +1)
+			u64 start = 0; 
+			if (never_covered){
+				start = stop - kmerSize + 1;
+				never_covered = false;
+			}
+			else
+				start = max(lastCoveragePosition + 1, stop - kmerSize + 1); 
+		
 			nbCoveredSharedKmer += stop - start + 1;
-			lastTruePosition = stop;
+			lastCoveragePosition = stop;
 		}
 		q->endingPositionSharedKmer.clear();
 		// for this match: add the number of positions covered by at least a shared kmer

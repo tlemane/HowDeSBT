@@ -447,14 +447,14 @@ int QueryCommandKm::execute()
 
   read_queries();
 
-  if (contains(debug, "input"))
-  {
-    for (auto &q : queries)
-    {
-      cerr << ">" << q->name << endl;
-      cerr << q->seq << endl;
-    }
-  }
+  // if (contains(debug, "input"))
+  // {
+  //   for (auto &q : queries)
+  //   {
+  //     cerr << ">" << q->name << endl;
+  //     cerr << q->seq << endl;
+  //   }
+  // }
 
 
   // propagate debug information into the queries and/or tree nodes
@@ -684,12 +684,12 @@ void QueryCommandKm::print_matches_with_kmer_counts(std::ostream &out) const
       u64 numCovered = q->matchesCoveredPos[matchIx];
 
       out << name
-          << " " << numCovered << "/" << q->seq.length()
+          << " " << numCovered << "/" << q->seq_length
           << " (" << numPassed << "/" << q->numPositions << ")";
       if (q->numPositions == 0)
         out << " 0"; // instead of dividing by zero
       else
-        out << " " << std::setprecision(6) << std::fixed << (numCovered / float(q->seq.length()));
+        out << " " << std::setprecision(6) << std::fixed << (numCovered / float(q->seq_length));
 
       out << endl;
       matchIx++;
@@ -730,7 +730,7 @@ void QueryCommandKm::print_kmer_hit_counts(std::ostream &out) const
       u64 numCovered = q->matchesCoveredPos[matchIx];
 
       out << q->name << " vs " << name
-          << " " << numCovered << "/" << q->seq.length()
+          << " " << numCovered << "/" << q->seq_length
           << " (" << numPassed << "/" << q->numPositions << ")";
 
       if (q->numPositions == 0)
