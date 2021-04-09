@@ -140,8 +140,7 @@ void Query::kmerize(BloomFilter *bf,
 					continue;
 			}
 			kmerPositions.emplace_back(pos);
-			if (true) // todo: option for query_coeverage
-				kmerized2endpos.emplace_back(ix);
+			kmerized2endpos.emplace_back(ix);
 		}
 
 	}

@@ -1246,7 +1246,6 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 
 void BloomTree::batch_query
    (vector<Query*>	queries,
-	bool			distinctKmers,
 	bool			completeKmerCounts)
 	{
 	// preload a root, and make sure that a leaf-only operation can work with
@@ -1262,7 +1261,7 @@ void BloomTree::batch_query
 
 	for (auto& q : queries)
 		{
-		q->kmerize(bf,distinctKmers);
+		q->kmerize(bf);
 		}
 
 	// make a local copy of the query list (consisting of the same instances)
@@ -1315,8 +1314,8 @@ void BloomTree::perform_batch_query
 
 	if (isDummy)
 		{
-		if (dbgTraversal)
-			cerr << "(skipping through dummy node)" << endl;
+		// if (dbgTraversal)
+		// 	cerr << "(skipping through dummy node)" << endl;
 
 		for (const auto& child : children)
 			child->perform_batch_query(activeQueries,queries,completeKmerCounts);
@@ -1334,8 +1333,8 @@ void BloomTree::perform_batch_query
 			}
 		}
 
-	if (dbgTraversal)
-		cerr << "examining " << name << " (#" << (++dbgTraversalCounter) << ")" << endl;
+	// if (dbgTraversal)
+	// 	cerr << "examining " << name << " (#" << (++dbgTraversalCounter) << ")" << endl;
 
 	// save query state
 
@@ -1367,7 +1366,7 @@ void BloomTree::perform_batch_query
 		q->nodesExamined++;
 		bool queryPasses = false;
 		bool queryFails  = false;
-
+		q->endingPositionSharedKmer.clear();
 		
 		u64 positionsToTest = q->numUnresolved;
 		u64 posIx = 0;
@@ -1414,7 +1413,12 @@ void BloomTree::perform_batch_query
 			// the list; note that we *don't* increase posIx in this case, as
 			// the next iteration needs to process the position we just swapped
 			// into that slot
-
+			// PIERRE: doute ici !!!
+			// PIERRE: is this restored latter by restore_positions_in_list ?
+			// PIERRE: else there is a shift between 
+			// PIERRE: 		q->kmerPositions
+			// PIERRE: 		and 
+			// PIERRE: 		q->kmerized2endpos
 			if ((posIsResolved) and (not isLeaf))
 				{
 				positionsToTest--;
@@ -1511,7 +1515,7 @@ void BloomTree::perform_batch_query
 	// this would be a null operation, but for nodes that use rank/select the
 	// position values are modified to reflect the removal of inactive bits in
 	// the bloom filters
-
+	// PIERRE: doute ici
 	if (isPositionAdjustor)
 		{
 		for (qIx=0 ; qIx<activeQueries ; qIx++)
@@ -1530,7 +1534,7 @@ void BloomTree::perform_batch_query
 		}
 
 	// restore kmer/position lists as we move up the tree
-
+	// PIERRE: doute ici
 	if (isPositionAdjustor)
 		{
 		for (qIx=0 ; qIx<activeQueries ; qIx++)
@@ -1594,154 +1598,7 @@ void BloomTree::query_matches_leaves
 		}
 	}
 
-void BloomTree::batch_count_kmer_hits
-   (vector<Query*>	queries,
-	bool			distinctKmers)
-	{
-	// preload a root, and make sure that a leaf-only operation can work with
-	// the type of filter we have
 
-	BloomFilter* bf = real_filter();
-	if (bf == nullptr)
-		fatal ("internal error: batch_count_kmer_hits() unable to locate any bloom filter");
-	bf->preload();
-
-	// convert the queries to kmers/positions
-
-	for (auto& q : queries)
-		{
-		q->kmerize(bf,distinctKmers);
-		}
-
-	// make a local copy of the query list (consisting of the same instances)
-	// while initializing each query's search details; we'll use this single
-	// copy throughout the query process
-
-	vector<Query*> localQueries;
-
-	for (auto& q : queries)
-		{
-		u64 numPositions = q->kmerPositions.size();
-		if (numPositions == 0)
-			{
-			cerr << "warning: query \"" << q->name << "\" contains no searchable kmers" << endl;
-			continue; // (queries with no kmers are removed from the search)
-			}
-
-		q->numPassed     = 0;
-		q->numFailed     = 0;
-		q->numPositions  = numPositions;
-		q->numUnresolved = numPositions;
-		q->neededToPass  = ceil (q->threshold * numPositions);
-		q->neededToFail  = (numPositions - q->neededToPass) + 1;
-		q->nodesExamined = 0;
-
-		localQueries.emplace_back(q);
-
-		}
-
-	// perform the query; note that calculation will only occur at leaves
-
-	if (dbgTraversal)
-		dbgTraversalCounter = 0;
-
-	if (localQueries.size() > 0)
-		perform_batch_count_kmer_hits (localQueries);
-	}
-
-void BloomTree::perform_batch_count_kmer_hits
-   (vector<Query*>	queries)
-	{
-	// skip non-leaf nodes
-
-	if (not isLeaf)
-		{
-		if (dbgTraversal)
-			{
-			if (isDummy) cerr << "(skipping through dummy node)" << endl;
-			        else cerr << "(skipping through non-leaf node " << name << ")" << endl;
-			}
-
-		for (const auto& child : children)
-			child->perform_batch_count_kmer_hits (queries);
-		return;
-		}
-
-	if (dbgTraversal)
-		cerr << "examining " << name << " (#" << (++dbgTraversalCounter) << ")" << endl;
-
-	// make sure this node's filter is resident
-
-	load();
-
-	// operate on each query in the batch
-
-	const u64 kmerSize = bf->kmerSize;
-
-	
-	for (auto& q : queries)
-		{
-
-		q->nodesExamined++;
-		q->numPassed = q->numFailed = 0;
-
-		for (u64 posIx=0 ; posIx<q->kmerPositions.size() ; posIx++)
-			{
-			u64 pos = q->kmerPositions[posIx];
-			int resolution = lookup(pos);
-
-			if (resolution == BloomFilter::absent)
-				{
-				q->numFailed++;
-				}
-			else if (resolution == BloomFilter::present)
-				{
-				q->numPassed++; 
-
-				// query coverage computation 
-				u64 kmerEndingPos = q->kmerized2endpos[posIx];
-				q->endingPositionSharedKmer.push_back(kmerEndingPos);
-
-				}
-			else // if (resolution == BloomFilter::unresolved)
-				{
-				cerr << "warning: " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
-					     << " is unresolved!" << endl;
-				}
-			}
-
-
-		// add the query to the list of 'matches' for this leaf, regardless of
-		// whether it passes or not
-
-		q->matches.emplace_back (name);
-		q->matchesNumPassed.emplace_back (q->numPassed); 
-
-
-		std::vector<bool> coveredBySharedKmer (q->seq.length(), false); // for each position 
-										// true if covered by a shared kmer
-										// else false.
-
-				// count number of positions covered by at least a shared kmer
-		// uses the endingPositionSharedKmer vector
-		u64 lastTruePosition = -1;
-		u64 nbCoveredSharedKmer = 0;
-		for (std::vector<u64>::iterator it = q->endingPositionSharedKmer.begin(); it != q->endingPositionSharedKmer.end(); ++it){
-			const u64 stop = *it;
-			const u64 start = max(lastTruePosition + 1, stop - kmerSize + 1);
-			nbCoveredSharedKmer += stop - start + 1;
-			lastTruePosition = stop;
-		}
-		q->endingPositionSharedKmer.clear();
-		// for this match: add the number of positions covered by at least a shared kmer
-		q->matchesCoveredPos.emplace_back (nbCoveredSharedKmer);
-		
-
-	// we don't need this node's filter to be resident any more
-
-	unloadable();
-	}
-}
 
 
 int BloomTree::lookup

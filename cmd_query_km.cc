@@ -1,4 +1,4 @@
-// cmd_query.cc-- query a sequence bloom tree
+// cmd_query_km.cc-- query a sequence bloom tree built from kmtricks
 
 #include <string>
 #include <cstdlib>
@@ -71,8 +71,6 @@ void QueryCommandKm::usage(std::ostream &s,
   s << "                       and report the number of kmers present" << endl;
   s << "                       (by default we just report the matched leaves without" << endl;
   s << "                       regard to which matches are better)" << endl;
-  s << "  --distinctkmers      perform the query counting each distinct kmer only once" << endl;
-  s << "                       (by default we count a query kmer each time it occurs)" << endl;
   s << "  --consistencycheck   before searching, check that bloom filter properties are" << endl;
   s << "                       consistent across the tree" << endl;
   s << "                       (not needed with --usemanager)" << endl;
@@ -120,9 +118,9 @@ void QueryCommandKm::parse(int _argc,
 
   generalQueryThreshold = -1.0; // (unassigned threshold)
   sortByKmerCounts = false;
-  distinctKmers = false;
   checkConsistency = false;
   reportTime = false;
+
 
   // skip command name
 
@@ -228,14 +226,6 @@ void QueryCommandKm::parse(int _argc,
       continue;
     }
 
-
-    // --distinctkmers
-
-    if ((arg == "--distinctkmers") || (arg == "--distinct-kmers") || (arg == "--distinct"))
-    {
-      distinctKmers = true;
-      continue;
-    }
 
     // --consistencycheck
     if (arg == "--consistencycheck")
@@ -537,7 +527,7 @@ int QueryCommandKm::execute()
 
   // perform the query
 
-  root->batch_query(queries, distinctKmers, completeKmerCounts);
+  root->batch_query(queries, completeKmerCounts);
 
   // report results
 

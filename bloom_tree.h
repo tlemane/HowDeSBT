@@ -71,17 +71,12 @@ public:
 	virtual void construct_determined_brief_nodes (std::uint32_t compressor);
 	virtual void construct_intersection_nodes (std::uint32_t compressor);
 
-	virtual void batch_query (std::vector<Query*> queries, bool distinctKmers=false,
+	virtual void batch_query (std::vector<Query*> queries,
 	                          bool completeKmerCounts=false);
 private:
 	virtual void perform_batch_query (std::uint64_t activeQueries, std::vector<Query*> queries,
 	                                  bool completeKmerCounts=false);
 	virtual void query_matches_leaves (Query* q);
-
-public:
-	virtual void batch_count_kmer_hits (std::vector<Query*> queries, bool distinctKmers=false);
-private:
-	virtual void perform_batch_count_kmer_hits (std::vector<Query*> queries);
 
 public:
 	virtual int lookup (const std::uint64_t pos) const;

@@ -35,7 +35,6 @@ public:
   std::string winFileName;
   double generalQueryThreshold;
   bool sortByKmerCounts;
-  bool distinctKmers;
   bool useFileManager;
   bool checkConsistency;			// only meaningful if useFileManager is false
   // bool collectNodeStats;
