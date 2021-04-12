@@ -1419,14 +1419,11 @@ void BloomTree::perform_batch_query
 				q->kmerPositions[posIx] = q->kmerPositions[positionsToTest];
 				q->kmerPositions[positionsToTest] = pos;
 
-				// Pierre Peterlongo - untested code: condition never met during my tests (april 2021)
-				// .. even on large queries.
 				// Exchanges q->kmerized2endpos[posIx] and q->kmerized2endpos[positionsToTest] to 
 				// .. stay in line with q->kmerPositions 
 				std::uint64_t temp 					= q->kmerized2endpos[posIx];
 				q->kmerized2endpos[posIx]			= q->kmerized2endpos[positionsToTest];
 				q->kmerized2endpos[positionsToTest] = temp;
-				// Pierre Peterlongo - end untested code. 
 				}
 
 			// otherwise, move on to the next pos
