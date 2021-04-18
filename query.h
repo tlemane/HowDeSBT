@@ -32,15 +32,13 @@ public:
 	Query(const querydata& qd, double threshold, km::RepartFile *rep, vector<tuple<uint64_t, uint64_t>> hashwin, uint64_t ms, uint32_t minimsize);
 	virtual ~Query();
 
-	virtual void kmerize (BloomFilter* bf, bool distinct=false, bool populateKmers=false);
-	virtual void sort_kmer_positions ();
-	virtual void dump_kmer_positions (std::uint64_t numUnresolved=-1);
-	virtual std::uint64_t kmer_positions_hash (std::uint64_t numUnresolved=-1);
+	virtual void kmerize (BloomFilter* bf, bool distinct=false);
 
 public:
 	std::uint32_t batchIx;	// index of this query within a batch
 	std::string name;
 	std::string seq;		// nucleotide sequence
+	std::uint64_t seq_length; 
 	double threshold;		// search threshold
 	std::vector<std::uint64_t> kmerPositions; // the kmers (converted to hash
 										// .. values) corresponding to this
@@ -48,13 +46,16 @@ public:
 										// .. entries are the yet-to-be-resolved
 										// .. kmers; the resolved kmers are
 										// .. moved to the tail
-	std::vector<std::string> kmers;		// the kmers; this is only populated
-										// .. in special instances (e.g. for
-										// .. cmd_query_bf), and in those
-										// .. cases care should be taken to
-										// .. assure that the kmerPositions[ix]
-										// .. corresponds to kmers[ix] for each
-										// .. ix
+	
+	std::vector<std::uint64_t> kmerized2endpos; // ending position of each queried 
+										// .. kmer stored in kmerPositions. 
+										// .. Eg. if first kmer stored in kmerPositions
+										// ends position 42, and the second ends position 137, 
+										// then kmerized2endpos contains 42 and 137.
+
+									
+	std::vector<std::uint64_t> endingPositionSharedKmer; // Ending positions of a shared kmers for a target.
+
 
 	std::uint64_t numPositions;			// total size of kmerPositions
 	std::uint64_t neededToPass;			// number of kmers required, to judge
@@ -70,29 +71,22 @@ public:
 										// .. in all leaves of the subtree
 	std::uint64_t nodesExamined;		// number of nodes that were "examined"
 										// by this query
-	bool adjustKmerCounts;				// true  => populate matchesAdjusted[]
-										// false => don't
     std::vector<std::string> matches;	// names of leaves that match this query
     std::vector<std::uint64_t> matchesNumPassed;  // numPassed corresponding to
 										// .. each match; only valid if the
 										// .. search reached the leaf without
 										// .. having been pruned
-    std::vector<std::uint64_t> matchesAdjustedHits;  // adjusted value of
-										// .. numPassed (corresponding to each
-										// .. match), to .. account for
-										// .. estimated bloom filter false
-										// .. positives; only valid if the
+	
+    std::vector<std::uint64_t> matchesCoveredPos;  // nb of positions covered by
+										// a shared kmer, corresponding to
+										// .. each match; only valid if the
 										// .. search reached the leaf without
-										// .. having been pruned, and only if
-										// .. adjustKmerCounts is true
-
-										// stacks to maintain numUnresolved,
-										// .. numPassed, and numFailed as we
-										// .. move up and down the tree
+										// .. having been pruned
+										
     std::vector<std::uint64_t> numUnresolvedStack;
     std::vector<std::uint64_t> numPassedStack;
     std::vector<std::uint64_t> numFailedStack;
-    std::vector<std::uint64_t> dbgKmerPositionsHashStack;
+    
 
   km::RepartFile *_repartitor;
   std::vector<std::tuple<std::uint64_t, std::uint64_t>> _win;
@@ -100,14 +94,8 @@ public:
   uint64_t _msize;
   uint32_t _minimsize;
 
-public:
-	bool dbgKmerize    = false;
-	bool dbgKmerizeAll = false;
 
 public:
-	static void read_query_file (std::istream& in, const std::string& filename,
-	                             double threshold,
-	                             std::vector<Query*>& queries);
 	static void read_query_file_km (std::istream& in, const std::string& filename, double threshold, std::vector<Query*>& queries, std::string& repartFileName, std::string& winFileName);
 	};
 
